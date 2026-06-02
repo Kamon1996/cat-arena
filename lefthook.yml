@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{js,jsx,ts,tsx,json,jsonc}"
+      run: npx biome check --no-errors-on-unmatched --staged --write {staged_files}
+      stage_fixed: true
+    stylelint:
+      glob: "src/**/*.css"
+      run: npx stylelint {staged_files}
+    typecheck:
+      run: npx tsc --noEmit
