@@ -30,3 +30,9 @@ export const PAIR_MIN_POOL = 2; // need ≥2 distinct eligible cats to form a pa
 
 // Pair token — single-use HMAC token lifetime
 export const PAIR_TOKEN_TTL_SECONDS = 120; // short expiry; nonce gives single-use
+
+// Rate limiting — vote token bucket (per voterKey/IP)
+export const RATE_LIMIT_REFILL_TOKENS = 10; // tokens added per interval
+export const RATE_LIMIT_REFILL_INTERVAL = "10 s" as const; // refill cadence (Duration literal)
+export const RATE_LIMIT_MAX_TOKENS = 20; // bucket capacity (allows a short burst)
+export const RATE_LIMIT_PREFIX = "ratelimit:vote";
