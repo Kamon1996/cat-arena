@@ -1,9 +1,25 @@
 {
   "extends": ["stylelint-config-standard"],
   "rules": {
-    "at-rule-no-unknown": [true, {
-      "ignoreAtRules": ["tailwind","apply","layer","theme","variant","custom-variant","utility","source","reference","config","plugin","screen"]
-    }],
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "layer",
+          "theme",
+          "variant",
+          "custom-variant",
+          "utility",
+          "source",
+          "reference",
+          "config",
+          "plugin",
+          "screen"
+        ]
+      }
+    ],
     "import-notation": "string",
     "no-descending-specificity": null,
     "lightness-notation": null,
