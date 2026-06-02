@@ -61,12 +61,12 @@ test.describe("Home duel", () => {
 
     await page.goto(HOME_URL);
 
-    await expect(page.getByText("Alpha")).toBeVisible();
-    await expect(page.getByText("Bravo")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Alpha" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bravo" })).toBeVisible();
 
     await page.getByRole("button", { name: /pick alpha/i }).click();
 
-    await expect(page.getByText("Charlie")).toBeVisible();
-    await expect(page.getByText("Delta")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Charlie" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Delta" })).toBeVisible();
   });
 });
