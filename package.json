@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "biome check .",
+    "format": "biome check --write ."
   },
   "dependencies": {
     "next": "15.5.19",
@@ -13,6 +15,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

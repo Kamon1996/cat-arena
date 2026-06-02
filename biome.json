@@ -1,0 +1,66 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.7/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "**",
+      "!**/.next",
+      "!**/node_modules",
+      "!**/coverage",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!src/components/ui"
+    ]
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "linter": {
+    "enabled": true,
+    "domains": { "react": "recommended", "test": "recommended" },
+    "rules": { "recommended": true }
+  },
+  "javascript": { "formatter": { "quoteStyle": "double", "semicolons": "always" } },
+  "json": { "formatter": { "trailingCommas": "none" } },
+  "css": { "parser": { "tailwindDirectives": true }, "formatter": { "enabled": true } },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              [":NODE:"],
+              ":PACKAGE:",
+              ":BLANK_LINE:",
+              ":ALIAS:",
+              ":PATH:",
+              ":BLANK_LINE:",
+              { "type": true }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "**/app/**/page.tsx",
+        "**/app/**/layout.tsx",
+        "**/app/**/route.ts",
+        "**/app/**/sitemap.ts",
+        "**/app/**/robots.ts",
+        "**/app/**/not-found.tsx",
+        "**/app/**/error.tsx",
+        "**/app/**/loading.tsx",
+        "**/*.config.ts",
+        "**/*.config.mjs"
+      ],
+      "linter": { "rules": { "style": { "useNamingConvention": "off", "noDefaultExport": "off" } } }
+    },
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+      "linter": { "rules": { "suspicious": { "noExplicitAny": "off" } } }
+    }
+  ]
+}
