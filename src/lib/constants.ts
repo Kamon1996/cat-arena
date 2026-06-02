@@ -20,3 +20,10 @@ export const IMAGE_SIZE = {
   THUMB: 200,
   CARD: 800,
 } as const;
+
+// Pairing — candidate pools & selection windows
+export const PAIR_A_CANDIDATE_POOL = 40; // rows pulled via (status, rd) index for A
+export const PAIR_B_CANDIDATE_POOL = 40; // rows pulled via (status, score) index for B
+export const PAIR_B_SCORE_WINDOW = 120; // B.score must be within ±window of A.score
+export const PAIR_EPSILON = 0.15; // prob. of picking a random eligible B instead of the closest
+export const PAIR_MIN_POOL = 2; // need ≥2 distinct eligible cats to form a pair
