@@ -29,10 +29,21 @@ export const PAIR_EPSILON = 0.15; // prob. of picking a random eligible B instea
 export const PAIR_MIN_POOL = 2; // need ≥2 distinct eligible cats to form a pair
 
 // Pair token — single-use HMAC token lifetime
-export const PAIR_TOKEN_TTL_SECONDS = 120; // short expiry; nonce gives single-use
+export const PAIR_TOKEN_TTL_SECONDS = 60 * 30; // 30 min pair→vote window; nonce gives single-use
 
 // Rate limiting — vote token bucket (per voterKey/IP)
 export const RATE_LIMIT_REFILL_TOKENS = 10; // tokens added per interval
 export const RATE_LIMIT_REFILL_INTERVAL = "10 s" as const; // refill cadence (Duration literal)
 export const RATE_LIMIT_MAX_TOKENS = 20; // bucket capacity (allows a short burst)
 export const RATE_LIMIT_PREFIX = "ratelimit:vote";
+
+// Anonymous voter identity (cookies)
+export const ANON_ID_COOKIE = "ca_anon";
+export const SEEN_COOKIE = "ca_seen";
+
+// Recent-seen ring buffer (cat ids), no DB
+export const SEEN_BUFFER_SIZE = 50;
+
+// TanStack Query timings for the duel
+export const PAIR_STALE_TIME_MS = 0;
+export const PAIR_GC_TIME_MS = 5 * 60 * 1000;
