@@ -66,6 +66,10 @@ export async function POST(request: Request): Promise<NextResponse<VoteResponse 
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 
+  // Single-use: claim the nonce BEFORE the transaction so concurrent replays can't
+  // double-apply the vote. Trade-off: if the transaction below fails, the nonce is
+  // already burned and this vote cannot be retried with the same token (acceptable —
+  // the client simply fetches a new pair). True idempotency is a later concern.
   const fresh = await consumeNonce(payload.nonce);
   if (!fresh) {
     return NextResponse.json({ error: "Token already used" }, { status: 403 });

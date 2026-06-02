@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { ImageStatus } from "@prisma/client";
+import { CatStatus, ImageStatus } from "@prisma/client";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -35,7 +35,8 @@ function resolveScope(raw: string | undefined): {
 
 async function loadCat(id: string): Promise<PairCat | null> {
   const cat = await prisma.cat.findFirst({
-    where: { id },
+    // Re-check status: a cat could be hidden/banned between pickPair and this load.
+    where: { id, status: CatStatus.ACTIVE },
     select: {
       id: true,
       name: true,

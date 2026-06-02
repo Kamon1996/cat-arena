@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import type { PairResponse } from "@/lib/api-types";
 
@@ -16,17 +16,8 @@ async function fetchPair(scope: string): Promise<PairResponse> {
 }
 
 export function useNextPair(scope = "global") {
-  const query = useQuery({
+  return useQuery({
     queryKey: [...PAIR_QUERY_KEY, scope],
     queryFn: () => fetchPair(scope),
   });
-
-  const queryClient = useQueryClient();
-  const prefetchNext = () =>
-    queryClient.prefetchQuery({
-      queryKey: [...PAIR_QUERY_KEY, scope],
-      queryFn: () => fetchPair(scope),
-    });
-
-  return { ...query, prefetchNext };
 }
