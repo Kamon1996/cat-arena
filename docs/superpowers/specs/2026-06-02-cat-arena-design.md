@@ -10,6 +10,8 @@
 **Ключевые требования:**
 - Продуманная, устойчивая к накруткам система рейтинга.
 - Алгоритм подбора, дающий оценивать как можно больше разных картинок.
+- **Рейтингуется котик** (имя + 1–3 картинки), не отдельная картинка; в дуэли его картинки листаются каруселью.
+  Лимиты — **конфигурируемые дефолты**: ≤2 котика на пользователя, ≤3 картинки на котика (меняются позже).
 - Простой вход; **логин нужен только для загрузки**, голосование анонимно (с заделом закрыть флагом).
 - **Сильное SEO.**
 - Бесплатный хостинг, но архитектура переживает вирусный всплеск (egress картинок вынесен на R2/CDN).
@@ -50,60 +52,77 @@ Biome + Stylelint + git-hooks · Vitest + RTL + Playwright.
 - `storage/` — presigned-загрузка в R2, генерация размеров (`sharp`), URL.
 - `moderation/` — Workers AI скрин + очередь жалоб.
 - `auth/` — Auth.js (magic-link).
-- `api/` — тонкие хендлеры: получить пару, отправить голос, загрузить картинку, пожаловаться.
+- `api/` — тонкие хендлеры: получить пару, отправить голос, создать котика с картинками, пожаловаться.
 - страницы: `/` (голосование), `/top` (лидерборд), `/cat/[slug]` (SEO-страница), `/upload`, `/admin`.
 
 ## 4. Модель данных (Prisma / Postgres)
 ```prisma
-model Image {
+model Cat {
   id         String   @id @default(cuid())
-  slug       String   @unique
-  title      String?                       // опц. подпись → SEO
-  r2Key      String                        // ключ оригинала
-  width      Int
-  height     Int
-  status     ImageStatus @default(APPROVED) // PENDING|APPROVED|REJECTED
-  // Glicko-2
+  slug       String   @unique               // SEO-URL: <name>-<nanoid>
+  name       String                         // имя котика (отображение + SEO)
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  status     CatStatus @default(PENDING)     // PENDING|ACTIVE|HIDDEN|BANNED
+  // Glicko-2 (рейтингуется КОТИК, а не отдельная картинка)
   rating     Float    @default(1500)
   rd         Float    @default(350)
   vol        Float    @default(0.06)
-  score      Float    @default(800)        // = rating - 2*rd (денормализовано для сортировки)
+  score      Float    @default(800)          // = rating - 2*rd (денормализовано для сортировки)
   wins       Int      @default(0)
   losses     Int      @default(0)
-  draws      Int      @default(0)          // «оба пропущены» не считаем; зарезервировано
+  draws      Int      @default(0)            // зарезервировано
   timesShown Int      @default(0)
-  uploaderId String?
-  uploader   User?    @relation(fields: [uploaderId], references: [id])
+  images     CatImage[]
+  reports    Report[]
   createdAt  DateTime @default(now())
   approvedAt DateTime?
-  @@index([status, score])                 // лидерборд
-  @@index([status, rd])                     // пул «нуждающихся» для подбора
+  @@index([status, score])                   // лидерборд
+  @@index([status, rd])                       // пул «нуждающихся» для подбора
+  @@index([ownerId])                          // лимит ≤2 котика на юзера
+}
+
+model CatImage {
+  id        String   @id @default(cuid())
+  catId     String
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  r2Key     String                           // оригинал; thumb/card — по соглашению ключей
+  width     Int
+  height    Int
+  position  Int      @default(0)             // порядок в карусели
+  status    ImageStatus @default(PENDING)    // модерация/NSFW на уровне картинки
+  createdAt DateTime @default(now())
+  @@index([catId, position])
 }
 
 model Vote {
-  id        String   @id @default(cuid())
-  winnerId  String
-  loserId   String
-  voterKey  String                          // anonId (cookie) или "user:<id>"
-  createdAt DateTime @default(now())
-  @@index([voterKey, createdAt])            // дедуп виденного / история
-  @@index([winnerId]); @@index([loserId])
+  id          String   @id @default(cuid())
+  winnerCatId String                          // голос — МЕЖДУ КОТИКАМИ
+  loserCatId  String
+  voterKey    String                          // anonId (cookie) или "user:<id>"
+  createdAt   DateTime @default(now())
+  @@index([voterKey, createdAt])              // дедуп виденного / история
+  @@index([winnerCatId]); @@index([loserCatId])
 }
 
+model Report {                                // жалобы на котика
+  id        String   @id @default(cuid())
+  catId     String
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  reason    String?
+  reporter  String                            // anonId / user
+  createdAt DateTime @default(now())
+  @@index([catId])
+}
+
+enum CatStatus   { PENDING ACTIVE HIDDEN BANNED }
 enum ImageStatus { PENDING APPROVED REJECTED }
 
 // User / Account / Session / VerificationToken — стандартные таблицы Auth.js (Prisma adapter)
-
-model Report {                              // жалобы
-  id        String   @id @default(cuid())
-  imageId   String
-  reason    String?
-  reporter  String                          // anonId / user
-  createdAt DateTime @default(now())
-  @@index([imageId])
-}
 ```
-Голос фиксируется как «победитель vs проигравший». Подделка исключается **подписанным токеном пары** (см. §7).
+**Сущность рейтинга — `Cat`** (имя + 1–3 картинки). Голос — между двумя котиками; подделка исключается **подписанным токеном пары** (см. §7).
+**Лимиты — конфигурируемые дефолты (константы в конфиге, проверяются в API):** `MAX_CATS_PER_USER = 2`, `MAX_IMAGES_PER_CAT = 3` (меняются позже).
+Котик участвует в дуэлях, если `status = ACTIVE` и есть ≥1 картинка `APPROVED`. В дуэли его APPROVED-картинки идут **каруселью** (одна — без карусели; `position` задаёт порядок).
 
 ## 5. Рейтинг — Glicko-2
 - Три поля на котика: `rating` (μ, старт 1500), `rd` (старт 350), `vol` (σ, старт 0.06).
@@ -111,14 +130,14 @@ model Report {                              // жалобы
   пол `rd` снизу, чтобы рейтинг оставался отзывчивым).
 - Реализация — **чистый модуль `rating/glicko2.ts`** без БД; юнит-тесты на эталонных значениях из работы Гликмана.
 - **Лидерборд сортируется по `score = μ − 2·rd`** (нижняя граница 95% ДИ): мало голосов ⇒ большой `rd` ⇒ низкий `score`
-  ⇒ нельзя попасть в топ на удаче. `score` денормализован в `Image` и пересчитывается при каждом голосе.
+  ⇒ нельзя попасть в топ на удаче. `score` денормализован в `Cat` и пересчитывается при каждом голосе.
 - **Кнопка «пропустить»** → запрос новой пары, рейтинг и счётчики не меняются (только, опц., лёгкий сигнал подбору).
 - Исходы MVP: победа/поражение. Ничьи/«оба плохи» не вводим (поле `draws` зарезервировано).
 
 ## 6. Подбор пар
 Цели: покрытие (каждый котик набирает оценки), информативность дуэлей, отсутствие повторов для зрителя, дешевизна на масштабе.
 1. **Котик A** — взвешенная выборка с приоритетом «не хватает данных»: вес ∝ `rd` и ↓ для часто показанных
-   (`1/√(timesShown+1)`). Берём из небольшого пула по индексу `(status, rd)` — не сортируем всю таблицу.
+   (`1/√(timesShown+1)`). Берём из небольшого пула по индексу `(status, rd)` среди ACTIVE-котиков с ≥1 APPROVED-картинкой — не сортируем всю таблицу.
 2. **Котик B** — близкий к A по `score` (`score BETWEEN A.score±окно`, индекс `(status, score)`; `score` монотонен по силе),
    исключая виденных зрителем, `LIMIT` + случайность.
 3. **Невиденное:** аноним — `anonId` в подписанной cookie + кольцевой буфер последних ~50 показанных id (без БД-запроса);
@@ -133,15 +152,16 @@ model Report {                              // жалобы
 - Glicko-2 сам гасит накрутки (устоявшихся почти не сдвинуть).
 - **Задел:** эндпоинт голосования принимает и `anonId`, и `userId` ⇒ позже флагом включаем «только залогиненные».
 
-## 8. Загрузка картинок
-- Только для залогиненных. Поток:
-  1. `POST /api/upload/sign` — валидирует тип/размер, генерит `r2Key` + `slug`, отдаёт **presigned PUT URL**.
-  2. Клиент грузит **оригинал напрямую в R2** (минуя функции Vercel). Опц. клиентское превью/ресайз
-     (`web-files-image-handling`).
-  3. `POST /api/upload/complete` — сервер берёт оригинал из R2, через **`sharp`** делает `thumb` (~200px) и `card` (~800px),
-     **срезает EXIF**, конвертит в **WebP**, пишет в R2; прогоняет **NSFW/«это кот?»** скрин (§9); создаёт `Image`.
-- Лимиты: типы jpeg/png/webp, ≤10 МБ, макс. сторона. Опц. заголовок → `slug` (`<title>-<nanoid>`), иначе `cat-<nanoid>`.
-- Чистка осиротевших: если `complete` не вызван — TTL на временный объект R2 / отложенная уборка PENDING.
+## 8. Загрузка: котик + картинки
+- Только для залогиненных. Лимиты (конфигурируемые дефолты): `MAX_CATS_PER_USER = 2`, `MAX_IMAGES_PER_CAT = 3`.
+- Поток создания котика:
+  1. Пользователь задаёт **имя** котика и выбирает 1–3 картинки.
+  2. На каждую: `POST /api/upload/sign` → **presigned PUT URL**; клиент грузит **оригинал напрямую в R2** (минуя Vercel).
+     Опц. клиентское превью/ресайз (`web-files-image-handling`).
+  3. `POST /api/cats` — по каждой картинке сервер берёт оригинал из R2, через **`sharp`** делает `thumb` (~200px) и
+     `card` (~800px), **срезает EXIF**, конвертит в **WebP**, пишет в R2; (опц.) NSFW-скрин (§9); создаёт `Cat` + `CatImage[]` (с `position`).
+- Тип jpeg/png/webp, ≤10 МБ, макс. сторона. `slug = <name>-<nanoid>`.
+- Чистка осиротевших: если котик не дозагружен — TTL на временные объекты R2 / отложенная уборка PENDING.
 
 ## 9. Модерация
 **Постмодерация + жалобы + админка + авто-NSFW.**
@@ -157,8 +177,8 @@ model Report {                              // жалобы
 - **Гейт:** загрузка/админка требуют сессии; голосование анонимно.
 
 ## 11. SEO (ключевая цель)
-- **Страница котика `/cat/[slug]`** (SSG/ISR): картинка с `alt`, место в топе, рейтинг, W/L, история дуэлей →
-  тысячи long-tail страниц. JSON-LD `ImageObject` + `BreadcrumbList`.
+- **Страница котика `/cat/[slug]`** (SSG/ISR): **имя**, карусель его картинок (с `alt`), место в топе, рейтинг, W/L,
+  история дуэлей → тысячи long-tail страниц. JSON-LD `ImageObject`/`ImageGallery` + `BreadcrumbList`.
 - **Лидерборд `/top`** (ISR): ранжированный список, JSON-LD `ItemList`.
 - **Главная `/`**: интерактивное голосование + SSR-блок ссылок на топ ⇒ краулер находит страницы.
 - **`sitemap.xml`** (динамический, все APPROVED) + **`robots.txt`** + canonical.
@@ -169,7 +189,7 @@ model Report {                              // жалобы
 
 ## 12. Маршруты
 `/` голосование · `/top` лидерборд · `/cat/[slug]` страница котика · `/upload` загрузка (auth) · `/admin` модерация (admin) ·
-`/api/pair` выдать пару (+токен) · `/api/vote` голос · `/api/upload/sign` · `/api/upload/complete` · `/api/report` ·
+`/api/pair` выдать пару (+токен) · `/api/vote` голос · `/api/upload/sign` · `/api/cats` создать котика · `/api/report` ·
 `/sitemap.xml` · `/robots.txt`.
 
 ## 13. Обработка ошибок и тесты
@@ -188,7 +208,7 @@ model Report {                              // жалобы
 2. **Данные:** Prisma-схема + Neon, миграции.
 3. **Рейтинг:** чистый Glicko-2 + тесты.
 4. **Подбор пар** + токен пары + Upstash rate-limit.
-5. **Голосование (главная):** API `/api/pair`, `/api/vote`, UI дуэли (Motion), «пропустить».
+5. **Голосование (главная):** API `/api/pair`, `/api/vote`, UI дуэли двух котиков (Motion; **карусель** картинок котика, если их >1, иначе одиночная), «пропустить».
 6. **Auth (magic-link)** + Resend/React Email + гейт.
 7. **Загрузка:** presigned R2 + `sharp` + Workers AI NSFW.
 8. **Модерация:** жалобы + `/admin`.
