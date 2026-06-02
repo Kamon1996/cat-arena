@@ -20,3 +20,22 @@
 
 ## Статус
 🚧 В разработке. Дизайн-документ — в [`docs/`](docs/).
+
+## Local development
+
+1. `cp .env.example .env.local` and fill in the values.
+2. `npm install` (runs `lefthook install` via the `prepare` script).
+3. `npm run dev` — start the app at http://localhost:3000.
+
+### Scripts
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Next.js dev server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm test` | Vitest unit + component tests |
+| `npm run test:e2e` | Playwright E2E tests (auto-starts dev server) |
+| `npm run lint` | Biome lint + format check (JS/TS/JSON) |
+| `npm run lint:css` | Stylelint CSS correctness |
+| `npm run typecheck` | `tsc --noEmit` |
