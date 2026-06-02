@@ -27,3 +27,6 @@ export const PAIR_B_CANDIDATE_POOL = 40; // rows pulled via (status, score) inde
 export const PAIR_B_SCORE_WINDOW = 120; // B.score must be within ±window of A.score
 export const PAIR_EPSILON = 0.15; // prob. of picking a random eligible B instead of the closest
 export const PAIR_MIN_POOL = 2; // need ≥2 distinct eligible cats to form a pair
+
+// Pair token — single-use HMAC token lifetime
+export const PAIR_TOKEN_TTL_SECONDS = 120; // short expiry; nonce gives single-use
