@@ -1,0 +1,47 @@
+{
+  // Force-enable Biome + Stylelint for THIS workspace. The global user settings have
+  // "biome.enabled": false and Prettier as the default formatter; these workspace values
+  // override them so the project uses Biome + Stylelint regardless of the global setup.
+  "biome.enabled": true,
+  "stylelint.enable": true,
+
+  // Use the workspace TypeScript (node_modules) for editor IntelliSense so editor diagnostics
+  // match `tsc` / CI. VS Code otherwise uses its bundled TS (6.0.x), whose stricter defaults
+  // (e.g. noUncheckedSideEffectImports) flag code that the project's pinned TS 5.x accepts.
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+
+  // ── Format on save, with Biome as the default formatter ──
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "biomejs.biome",
+  // Run Biome's safe fixes + import organizer on save (mirrors `biome check --write`).
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+
+  // ── Biome owns JS / TS / JSX / TSX / JSON / JSONC ──
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+
+  // ── CSS: Biome formats, Stylelint fixes correctness on save ──
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+
+  // ── Stylelint extension: lint CSS only (matches `lint:css` script) ──
+  "stylelint.validate": ["css"],
+
+  // Disable VS Code's built-in CSS/SCSS/LESS validators — they flag Tailwind v4
+  // at-rules (@theme, @apply, @custom-variant, …) as "unknown". Stylelint, with the
+  // ignoreAtRules in .stylelintrc.json, is the single source of truth for CSS correctness.
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false
+}

@@ -8,8 +8,7 @@
       "!**/node_modules",
       "!**/coverage",
       "!**/playwright-report",
-      "!**/test-results",
-      "!src/components/ui"
+      "!**/test-results"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
