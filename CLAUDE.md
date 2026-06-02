@@ -6,6 +6,30 @@ maximizes how many different cats get rated. **Strong SEO is a primary goal.**
 
 Hosting target: free tiers, but architected to survive a viral spike (image egress offloaded to Cloudflare R2/CDN).
 
+## ⚠️ Mandatory workflow — follow this for EVERY task (non-negotiable)
+Whenever you implement, change, or extend ANYTHING in this project, follow this loop. It applies to
+**absolutely everything** — UI, styling, components, data/DB, auth, images, file upload, emails, forms,
+client data-fetching, rate-limiting, analytics, monitoring, animations, SEO, performance, accessibility,
+tests, tooling, and infra.
+
+1. **Understand & plan first.** State what needs to be done and outline the concrete steps BEFORE touching code.
+2. **Identify the skills.** From the **Skill routing** table below, find EVERY skill that matches the areas
+   your task touches (usually several at once — e.g. an upload form touches forms + zod + image-handling +
+   file-upload + R2 + rate-limiting).
+3. **Load them BEFORE writing code.** Open each matching skill — read its `SKILL.md` and the relevant
+   `reference.md` / `examples` in `.claude/skills/<name>/`. Never write code in an area before loading its skill.
+4. **Implement strictly by the skill's best practices** + the **Code conventions** section below.
+   The skills are the source of truth for HOW we use each technology in this repo. Do not improvise patterns
+   that contradict a skill.
+5. **Re-check on every new sub-task.** If the work expands or a new concern appears mid-implementation,
+   STOP, go back to step 2, find and load the matching skill, then continue. Examples:
+   *“now I also need to send an email”* → load `api-email-*`; *“now I need to style this”* → load
+   `web-styling-*` + `web-ui-shadcn-ui`; *“now I need an event”* → load `api-analytics-*`.
+6. **No matching skill?** For areas without a vendored skill (e.g. Stylelint config, the Glicko-2 domain logic),
+   follow the documented best-practice in THIS file and general industry best practices — and say so explicitly.
+
+> This file is loaded into context every session, so this rule is always active. Treat it as binding for all work.
+
 ## Stack (locked)
 - **Next.js 15** (App Router, RSC, Server Actions) + **TypeScript** + **React** — deployed on **Vercel**
 - **PostgreSQL** (Neon, serverless) + **Prisma** ORM
@@ -41,9 +65,9 @@ Hosting target: free tiers, but architected to survive a viral spike (image egre
 - **Validation:** validate all external input with **Zod** at the boundary (API handlers, server actions, forms).
 - **Errors:** typed results at API boundaries; React error boundaries in the UI.
 
-## Skill routing — load the matching skill BEFORE working in that area
-Skills are vendored in `.claude/skills/` and load on demand. Before writing code in an area below,
-open the matching skill and follow it. If several apply, load all relevant ones.
+## Skill routing (canonical map — MANDATORY per the workflow above)
+This table is the binding map from "what I'm doing" → "which skill governs it". Per the Mandatory workflow,
+load the matching skill(s) BEFORE writing any code in that area. Most tasks match several rows — load them all.
 
 | When you are working on… | Load skill |
 |---|---|
