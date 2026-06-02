@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+import { PAIR_B_CANDIDATE_POOL, PAIR_B_SCORE_WINDOW } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { pickPair } from "./pick-pair";
 
@@ -55,6 +56,15 @@ describe("pickPair (global scope)", () => {
     const aArgs = findMany.mock.calls[0]?.[0];
     expect(aArgs?.where?.status).toBe("ACTIVE");
     expect(aArgs?.where?.images?.some?.status).toBe("APPROVED");
+
+    // B-pool query uses the (status, score) index: score window, ordered, capped.
+    const bArgs = findMany.mock.calls[1]?.[0];
+    expect(bArgs?.where?.score).toEqual({
+      gte: A_ROW.score - PAIR_B_SCORE_WINDOW,
+      lte: A_ROW.score + PAIR_B_SCORE_WINDOW,
+    });
+    expect(bArgs?.orderBy).toEqual({ score: "asc" });
+    expect(bArgs?.take).toBe(PAIR_B_CANDIDATE_POOL);
   });
 
   it("returns null when no eligible candidates", async () => {
@@ -67,7 +77,7 @@ describe("pickPair (global scope)", () => {
     expect(result).toBeNull();
   });
 
-  it("excludes self and seen from B", async () => {
+  it("excludes self (same id as A) from B", async () => {
     findMany
       .mockResolvedValueOnce([A_ROW] as never)
       .mockResolvedValueOnce([B_SELF, B_NEAR] as never);
@@ -78,6 +88,18 @@ describe("pickPair (global scope)", () => {
       voterKey: VOTER_KEY,
     });
     expect(result?.b.id).toBe("b"); // self excluded by core
+  });
+
+  it("excludes seen cat ids from B", async () => {
+    const SEEN = { id: "seen-cat", rating: 1500, rd: 90, score: 815, timesShown: 5 };
+    findMany.mockResolvedValueOnce([A_ROW] as never).mockResolvedValueOnce([SEEN, B_NEAR] as never);
+
+    const result = await pickPair({
+      scope: "global",
+      seenCatIds: [SEEN.id],
+      voterKey: VOTER_KEY,
+    });
+    expect(result?.b.id).toBe("b"); // seen excluded by core
   });
 });
 
