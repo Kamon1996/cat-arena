@@ -18,6 +18,8 @@ const GLICKMAN_EXPECTED_VOL = 0.05999;
 const RATING_TOLERANCE = 0.05;
 const RD_TOLERANCE = 0.05;
 const VOL_TOLERANCE = 0.0001;
+// Equal-rated win vs loss must be symmetric to within floating-point noise.
+const SYMMETRY_TOLERANCE = 0.001;
 
 // New-player vs settled-player single-vote behavior.
 const NEW_PLAYER: Rating = { rating: 1500, rd: 350, vol: 0.06 };
@@ -65,7 +67,7 @@ describe("updateGlicko2", () => {
     const upSwing = win.rating - NEW_PLAYER.rating;
     const downSwing = NEW_PLAYER.rating - loss.rating;
     expect(loss.rating).toBeLessThan(NEW_PLAYER.rating);
-    expect(Math.abs(upSwing - downSwing)).toBeLessThan(RATING_TOLERANCE);
+    expect(Math.abs(upSwing - downSwing)).toBeLessThan(SYMMETRY_TOLERANCE);
   });
 
   it("barely moves a settled (low-RD) player on a single win", () => {
