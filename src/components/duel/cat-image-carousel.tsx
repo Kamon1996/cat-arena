@@ -29,6 +29,7 @@ export function CatImageCarousel({ name, images, className }: CatImageCarouselPr
 
   return (
     <div className={cn("relative overflow-hidden rounded-xl", className)}>
+      {/* biome-ignore lint/performance/noImgElement: R2/CDN duel image; next/image optimization is a phase-08 (CWV) follow-up */}
       <img
         src={current.url}
         alt={`${name} (${index + STEP} of ${count})`}
