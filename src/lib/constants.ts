@@ -77,3 +77,6 @@ export const PRESIGN_TTL_SECONDS = 300; // 5 min
 
 // Admin users table — rows per page
 export const ADMIN_USERS_PAGE_SIZE = 20;
+
+// Moderation queue — cats per "Load more" page
+export const MODERATION_PAGE_SIZE = 10;
