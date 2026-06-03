@@ -138,11 +138,21 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role          @default(USER) // USER | MODERATOR | ADMIN (RBAC gate for /admin)
+  banned        Boolean       @default(false)
+  bannedAt      DateTime?
   accounts      Account[]
   sessions      Session[]
   cats          Cat[] // owned cats (Cat.owner relation)
   organization  Organization? // ≤1 org per user (Organization.createdBy relation)
   createdAt     DateTime      @default(now())
+}
+
+model BannedEmail {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  reason     String?
+  bannedById String? // admin who banned (informational, no FK)
+  createdAt  DateTime @default(now())
 }
 
 model Account {
