@@ -6,6 +6,7 @@ const meta = {
   title: "UI/Button",
   component: Button,
   tags: ["autodocs"],
+  parameters: { layout: "centered" },
   args: {
     children: "Button",
     variant: "default",
