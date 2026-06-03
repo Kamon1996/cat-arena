@@ -39,6 +39,11 @@ export function ModerationList({ initial, isAdmin, currentUserId }: ModerationLi
     setCats((prev) => prev.filter((c) => c.id !== catId));
   }
 
+  // Banning an owner deletes ALL their cats — drop every card by that owner.
+  function onOwnerResolved(ownerId: string): void {
+    setCats((prev) => prev.filter((c) => c.owner.id !== ownerId));
+  }
+
   if (cats.length === 0) {
     return (
       <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
@@ -57,6 +62,7 @@ export function ModerationList({ initial, isAdmin, currentUserId }: ModerationLi
             isAdmin={isAdmin}
             currentUserId={currentUserId}
             onResolved={onResolved}
+            onOwnerResolved={onOwnerResolved}
           />
         ))}
       </div>

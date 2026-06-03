@@ -32,20 +32,27 @@ type ModerationCardProps = {
   isAdmin: boolean;
   currentUserId: string;
   onResolved: (catId: string) => void;
+  onOwnerResolved: (ownerId: string) => void;
 };
 
 const RESOLVE_DELAY_MS = 1200;
 
 type ActionResult = { ok: boolean; error?: string };
 
-export function ModerationCard({ cat, isAdmin, currentUserId, onResolved }: ModerationCardProps) {
+export function ModerationCard({
+  cat,
+  isAdmin,
+  currentUserId,
+  onResolved,
+  onOwnerResolved,
+}: ModerationCardProps) {
   const [images, setImages] = useState(cat.images);
   const [busy, setBusy] = useState(false);
   const [doneLabel, setDoneLabel] = useState<string | null>(null);
 
-  function markDone(label: string): void {
+  function markDone(label: string, resolve: () => void = () => onResolved(cat.id)): void {
     setDoneLabel(label);
-    setTimeout(() => onResolved(cat.id), RESOLVE_DELAY_MS);
+    setTimeout(resolve, RESOLVE_DELAY_MS);
   }
 
   async function run(
@@ -116,7 +123,11 @@ export function ModerationCard({ cat, isAdmin, currentUserId, onResolved }: Mode
                 confirmLabel="Ban user"
                 disabled={busy}
                 onConfirm={() =>
-                  void run(banUser(cat.owner.id), () => markDone("user banned"), "Ban user failed")
+                  void run(
+                    banUser(cat.owner.id),
+                    () => markDone("user banned", () => onOwnerResolved(cat.owner.id)),
+                    "Ban user failed",
+                  )
                 }
               />
             </>
