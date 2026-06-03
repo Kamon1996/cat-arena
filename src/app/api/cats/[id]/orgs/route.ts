@@ -15,19 +15,14 @@ type RouteContext = { params: Promise<{ id: string }> };
 const joinSchema = z.object({ joinCode: z.string().min(1) });
 const leaveSchema = z.object({ orgId: z.string().min(1) });
 
-type OwnerGate =
-  | { ok: true; userId: string }
-  | { ok: false; response: NextResponse<ApiError> };
+type OwnerGate = { ok: true; userId: string } | { ok: false; response: NextResponse<ApiError> };
 
 async function ownerGate(catId: string): Promise<OwnerGate> {
   const session = await auth();
   if (!session?.user?.id) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 },
-      ),
+      response: NextResponse.json({ error: "Not authenticated" }, { status: 401 }),
     };
   }
   const cat = await prisma.cat.findUnique({
@@ -43,10 +38,7 @@ async function ownerGate(catId: string): Promise<OwnerGate> {
   if (cat.ownerId !== session.user.id) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { error: "Not the cat owner" },
-        { status: 403 },
-      ),
+      response: NextResponse.json({ error: "Not the cat owner" }, { status: 403 }),
     };
   }
   return { ok: true, userId: session.user.id };
@@ -114,10 +106,7 @@ export async function DELETE(
   try {
     const result = await leaveOrg({ catId: id, orgId: parsed.data.orgId });
     if (!result.ok) {
-      return NextResponse.json(
-        { error: "Membership not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch {

@@ -8,11 +8,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  ORG_DESCRIPTION_MAX,
-  ORG_NAME_MAX,
-  ORG_NAME_MIN,
-} from "@/lib/constants";
+import { ORG_DESCRIPTION_MAX, ORG_NAME_MAX, ORG_NAME_MIN } from "@/lib/constants";
 import type { CreateOrgResponse } from "@/lib/org-api-types";
 
 const orgFormSchema = z.object({
@@ -24,10 +20,7 @@ const orgFormSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(
-      ORG_DESCRIPTION_MAX,
-      `Description cannot exceed ${ORG_DESCRIPTION_MAX} characters`,
-    )
+    .max(ORG_DESCRIPTION_MAX, `Description cannot exceed ${ORG_DESCRIPTION_MAX} characters`)
     .optional(),
 });
 
@@ -89,8 +82,7 @@ export function OrgCreateForm() {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="org-description" className="font-medium text-sm">
-          Description{" "}
-          <span className="font-normal text-muted-foreground">(optional)</span>
+          Description <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
         <textarea
           id="org-description"

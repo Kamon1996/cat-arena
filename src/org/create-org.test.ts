@@ -45,7 +45,9 @@ describe("createOrg", () => {
       slug: "acme-org01",
       joinCode: "join-code-fixed-000000000",
     });
-    const args = create.mock.calls[0][0];
+    const args = create.mock.calls[0]?.[0] as {
+      data: { createdById: string; name: string };
+    };
     expect(args.data.createdById).toBe(USER_ID);
     expect(args.data.name).toBe(ORG_NAME);
   });

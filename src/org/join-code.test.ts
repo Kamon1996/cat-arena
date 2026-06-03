@@ -16,9 +16,7 @@ describe("generateJoinCode", () => {
   });
 
   it("produces distinct codes across many draws", () => {
-    const codes = new Set(
-      Array.from({ length: SAMPLE_COUNT }, () => generateJoinCode()),
-    );
+    const codes = new Set(Array.from({ length: SAMPLE_COUNT }, () => generateJoinCode()));
     expect(codes.size).toBe(SAMPLE_COUNT);
   });
 });

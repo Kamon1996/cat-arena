@@ -20,9 +20,7 @@ beforeEach(() => {
 
 describe("pickPair org scope only returns members", () => {
   it("filters both candidate pools to the org's members and an APPROVED image", async () => {
-    findMany
-      .mockResolvedValueOnce([A_ROW] as never)
-      .mockResolvedValueOnce([A_ROW, B_ROW] as never);
+    findMany.mockResolvedValueOnce([A_ROW] as never).mockResolvedValueOnce([A_ROW, B_ROW] as never);
 
     const result = await pickPair({
       scope: { orgId: ORG_ID },

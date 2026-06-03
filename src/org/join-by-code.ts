@@ -20,9 +20,7 @@ export type JoinByCodeResult =
  * for the cat) and relies on CatOrg's @@id([catId, orgId]) to reject duplicates.
  * New memberships start with the Glicko-2 defaults from the CatOrg schema.
  */
-export async function joinByCode(
-  input: JoinByCodeInput,
-): Promise<JoinByCodeResult> {
+export async function joinByCode(input: JoinByCodeInput): Promise<JoinByCodeResult> {
   const org = await prisma.organization.findUnique({
     where: { joinCode: input.joinCode },
     select: { id: true, slug: true },
@@ -43,10 +41,7 @@ export async function joinByCode(
       data: { catId: input.catId, orgId: org.id },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === UNIQUE_VIOLATION
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === UNIQUE_VIOLATION) {
       return { ok: false, reason: "already_member" };
     }
     throw error;

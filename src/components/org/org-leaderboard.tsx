@@ -26,11 +26,7 @@ type OrgLeaderboardProps = {
 
 export function OrgLeaderboard({ rows }: OrgLeaderboardProps) {
   if (rows.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        No cats yet in this organization.
-      </p>
-    );
+    return <p className="text-muted-foreground text-sm">No cats yet in this organization.</p>;
   }
 
   return (

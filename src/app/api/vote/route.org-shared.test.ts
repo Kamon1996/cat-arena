@@ -86,9 +86,7 @@ describe("POST /api/vote updates CatOrg for a shared org", () => {
     const res = await post(VALID);
     expect(res.status).toBe(200);
 
-    const updatedKeys = tx.catOrg.update.mock.calls.map(
-      (call) => call[0].where.catId_orgId,
-    );
+    const updatedKeys = tx.catOrg.update.mock.calls.map((call) => call[0].where.catId_orgId);
     // Exactly the winner + loser rows in the SHARED org are updated.
     expect(updatedKeys).toContainEqual({ catId: WINNER_ID, orgId: SHARED_ORG_ID });
     expect(updatedKeys).toContainEqual({ catId: LOSER_ID, orgId: SHARED_ORG_ID });

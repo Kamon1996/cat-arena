@@ -18,10 +18,7 @@ export type CreateOrgResult =
   | { ok: false; reason: "name_taken" | "already_owns_org" };
 
 function uniqueTarget(error: unknown): string {
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === UNIQUE_VIOLATION
-  ) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === UNIQUE_VIOLATION) {
     const target = error.meta?.target;
     return Array.isArray(target) ? target.join(",") : String(target ?? "");
   }
@@ -33,18 +30,16 @@ function uniqueTarget(error: unknown): string {
  * via the Organization.createdById @unique constraint, and name uniqueness via
  * the name @unique constraint. Generates a unique joinCode and slug.
  */
-export async function createOrg(
-  input: CreateOrgInput,
-): Promise<CreateOrgResult> {
+export async function createOrg(input: CreateOrgInput): Promise<CreateOrgResult> {
   try {
     const org = await prisma.organization.create({
       data: {
         name: input.name,
         slug: slug(input.name),
-        description: input.description,
-        logoR2Key: input.logoR2Key,
         joinCode: generateJoinCode(),
         createdById: input.userId,
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.logoR2Key !== undefined ? { logoR2Key: input.logoR2Key } : {}),
       },
       select: { id: true, slug: true, joinCode: true },
     });

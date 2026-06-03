@@ -77,8 +77,6 @@ test.describe("Organizations", () => {
 
     await page.goto(ORG_PAGE_URL);
 
-    await expect(
-      page.getByRole("heading", { name: /leaderboard/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /leaderboard/i })).toBeVisible();
   });
 });

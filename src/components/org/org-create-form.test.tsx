@@ -25,11 +25,11 @@ describe("OrgCreateForm", () => {
 
   it("posts the org and redirects to the new org page on success", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({ id: "org-1", slug: "acme-org01", joinCode: "code-x" }),
-        { status: 201 },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ id: "org-1", slug: "acme-org01", joinCode: "code-x" }), {
+          status: 201,
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -37,10 +37,12 @@ describe("OrgCreateForm", () => {
     await user.type(screen.getByLabelText(/name/i), "Acme");
     await user.click(screen.getByRole("button", { name: /create organization/i }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
-      "/api/orgs",
-      expect.objectContaining({ method: "POST" }),
-    ));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/orgs",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
     await waitFor(() => expect(push).toHaveBeenCalledWith("/org/acme-org01"));
   });
 });

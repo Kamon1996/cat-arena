@@ -15,9 +15,7 @@ const bodySchema = z.object({
   logoR2Key: z.string().min(1).optional(),
 });
 
-export async function POST(
-  request: Request,
-): Promise<NextResponse<CreateOrgResponse | ApiError>> {
+export async function POST(request: Request): Promise<NextResponse<CreateOrgResponse | ApiError>> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -39,12 +37,8 @@ export async function POST(
     const result = await createOrg({
       userId: session.user.id,
       name: parsed.data.name,
-      ...(parsed.data.description !== undefined
-        ? { description: parsed.data.description }
-        : {}),
-      ...(parsed.data.logoR2Key !== undefined
-        ? { logoR2Key: parsed.data.logoR2Key }
-        : {}),
+      ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+      ...(parsed.data.logoR2Key !== undefined ? { logoR2Key: parsed.data.logoR2Key } : {}),
     });
 
     if (!result.ok) {
