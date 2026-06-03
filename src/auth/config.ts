@@ -5,6 +5,7 @@ import Resend from "next-auth/providers/resend";
 import { AUTH } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { isEmailBanned } from "./is-email-banned";
 import { sendMagicLink } from "./send-magic-link";
 
 // Guards-based protection: route gating lives in server guards (src/auth/guards.ts),
@@ -29,10 +30,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    // Database session strategy: `user` is the full Prisma User row (incl. role).
+    async signIn({ user }) {
+      // Block sign-in (and fresh sign-ups) for blacklisted emails.
+      return !(await isEmailBanned(user.email));
+    },
+    // Database session strategy: `user` is the full Prisma User row.
     session({ session, user }) {
       session.user.id = user.id;
       session.user.role = user.role;
+      session.user.banned = user.banned;
       return session;
     },
   },

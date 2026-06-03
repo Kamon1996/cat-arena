@@ -10,6 +10,9 @@ export async function requireUser(): Promise<Session> {
   if (!session?.user) {
     redirect(AUTH.SIGN_IN_PATH);
   }
+  if (session.user.banned) {
+    redirect(`${AUTH.SIGN_IN_PATH}?banned=1`);
+  }
   return session;
 }
 

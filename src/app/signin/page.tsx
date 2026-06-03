@@ -13,12 +13,13 @@ interface SignInPageProps {
     type?: string;
     error?: string;
     callbackUrl?: string;
+    banned?: string;
   }>;
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const session = await auth();
-  const { sent, type, error, callbackUrl } = await searchParams;
+  const { sent, type, error, callbackUrl, banned } = await searchParams;
 
   // Only allow relative, same-origin callbacks (prevent open redirect).
   const rawCallback = callbackUrl ?? "/";
@@ -49,6 +50,12 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           <CardDescription>We'll email you a magic link — no password needed.</CardDescription>
         </CardHeader>
         <CardContent>
+          {banned ? (
+            <p role="alert" className="mb-4 text-destructive text-sm">
+              This account has been banned.
+            </p>
+          ) : null}
+
           {error ? (
             <p role="alert" className="mb-4 text-destructive text-sm">
               Could not send the sign-in link. Please try again.

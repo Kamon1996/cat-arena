@@ -5,10 +5,12 @@ declare module "next-auth" {
     user: {
       id: string;
       role: "USER" | "MODERATOR" | "ADMIN";
+      banned: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: "USER" | "MODERATOR" | "ADMIN";
+    banned: boolean;
   }
 }
