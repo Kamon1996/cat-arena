@@ -56,3 +56,21 @@ export const AUTH = {
   MAGIC_LINK_MAX_AGE_SECONDS: 15 * 60, // 15 min
   EMAIL_SUBJECT: "Sign in to Cat Arena",
 } as const;
+
+// ── Upload limits ──────────────────────────────────────────────
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB per original
+
+export const ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type AllowedUploadType = (typeof ALLOWED_UPLOAD_TYPES)[number];
+
+// ── Moderation thresholds (configurable defaults; tune on data) ──
+export const REPORT_HIDE_THRESHOLD = 5; // distinct reports → auto-hide cat
+export const NSFW_REJECT_THRESHOLD = 0.85; // P(nsfw) ≥ → REJECTED
+export const NSFW_PENDING_THRESHOLD = 0.5; // P(nsfw) ≥ (but < reject) → PENDING
+export const CAT_MIN_CONFIDENCE = 0.4; // P(is-a-cat) ≥ → eligible for APPROVED
+
+// ── Image encoding ───────────────────────────────────────────────
+export const WEBP_QUALITY = 82; // sharp .webp({ quality })
+
+// Presigned PUT URL lifetime — keep short (skill: < 1h)
+export const PRESIGN_TTL_SECONDS = 300; // 5 min
