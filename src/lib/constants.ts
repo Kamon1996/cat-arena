@@ -80,3 +80,14 @@ export const ADMIN_USERS_PAGE_SIZE = 20;
 
 // Moderation queue — cats per "Load more" page
 export const MODERATION_PAGE_SIZE = 10;
+
+// Organizations — SEO indexing gate: an org page is noindex until it has at least this many members.
+export const ORG_MIN_INDEXABLE_MEMBERS = 3;
+
+// Organizations — join code: long, URL-safe, hard to guess.
+export const ORG_JOIN_CODE_LENGTH = 24;
+
+// Organizations — name + description field limits (shared by Zod schemas + form).
+export const ORG_NAME_MIN = 2;
+export const ORG_NAME_MAX = 50;
+export const ORG_DESCRIPTION_MAX = 280;
