@@ -8,5 +8,8 @@ pre-commit:
     stylelint:
       glob: "src/**/*.css"
       run: npx stylelint {staged_files}
+    tailwind:
+      glob: "src/**/*.{ts,tsx}"
+      run: npx eslint --no-warn-ignored {staged_files}
     typecheck:
       run: npx tsc --noEmit
