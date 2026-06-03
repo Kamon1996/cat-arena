@@ -1,11 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ImageDropzone } from "@/components/upload/image-dropzone";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
@@ -73,23 +76,48 @@ export function UploadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <label htmlFor="cat-name">Cat name</label>
-      <input id="cat-name" {...register("name")} />
-      {errors.name ? <span role="alert">{errors.name.message}</span> : null}
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="cat-name" className="font-medium text-sm">
+          Cat name
+        </label>
+        <Input
+          id="cat-name"
+          placeholder="e.g. Mittens"
+          aria-invalid={Boolean(errors.name)}
+          {...register("name")}
+        />
+        {errors.name ? (
+          <p className="text-destructive text-sm" role="alert">
+            {errors.name.message}
+          </p>
+        ) : null}
+      </div>
 
-      <ImageDropzone
-        files={files}
-        onChange={(next) => setValue("files", next, { shouldValidate: true })}
-        disabled={isSubmitting}
-      />
-      {errors.files ? <span role="alert">{errors.files.message as string}</span> : null}
+      <div className="flex flex-col gap-2">
+        <span className="font-medium text-sm">Photos</span>
+        <ImageDropzone
+          files={files}
+          onChange={(next) => setValue("files", next, { shouldValidate: true })}
+          disabled={isSubmitting}
+        />
+        {errors.files ? (
+          <p className="text-destructive text-sm" role="alert">
+            {errors.files.message as string}
+          </p>
+        ) : null}
+      </div>
 
-      {submitError ? <p role="alert">{submitError}</p> : null}
+      {submitError ? (
+        <p className="text-destructive text-sm" role="alert">
+          {submitError}
+        </p>
+      ) : null}
 
-      <button type="submit" disabled={isSubmitting}>
+      <Button type="submit" className="self-start" disabled={isSubmitting}>
+        {isSubmitting ? <Loader2 className="animate-spin" /> : <Plus />}
         {isSubmitting ? "Uploading…" : "Create cat"}
-      </button>
+      </Button>
     </form>
   );
 }
