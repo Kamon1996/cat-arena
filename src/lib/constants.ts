@@ -74,3 +74,6 @@ export const WEBP_QUALITY = 82; // sharp .webp({ quality })
 
 // Presigned PUT URL lifetime — keep short (skill: < 1h)
 export const PRESIGN_TTL_SECONDS = 300; // 5 min
+
+// Admin users table — rows per page
+export const ADMIN_USERS_PAGE_SIZE = 20;
