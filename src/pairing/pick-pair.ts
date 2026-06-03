@@ -52,19 +52,24 @@ async function pickPair(opts: PickPairOptions): Promise<PickedPair | null> {
     take: PAIR_A_CANDIDATE_POOL,
   })) as Candidate[];
 
-  const anchor = aPool[0];
-  if (!anchor) {
+  if (aPool.length === 0) {
     return null;
   }
 
-  // B-pool: cats whose score is within ±window of the strongest A candidate,
-  // via the (status, score) index. Core re-anchors to the actually chosen A.
+  // B-pool covers the FULL A-pool score range ±window, so whichever A the core picks
+  // (weighted by rd) has its score-window opponents present. Fetching only around the
+  // highest-rd cat could miss the chosen A's neighbours once scores spread — which made
+  // a small pool unpairable after a few votes.
+  const scores = aPool.map((c) => c.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
   const bPool = (await prisma.cat.findMany({
     where: {
       ...where,
       score: {
-        gte: anchor.score - PAIR_B_SCORE_WINDOW,
-        lte: anchor.score + PAIR_B_SCORE_WINDOW,
+        gte: minScore - PAIR_B_SCORE_WINDOW,
+        lte: maxScore + PAIR_B_SCORE_WINDOW,
       },
     },
     select: CANDIDATE_SELECT,

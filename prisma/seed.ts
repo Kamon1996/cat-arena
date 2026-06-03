@@ -22,6 +22,17 @@ type SeedCat = {
 const SEED_CATS: SeedCat[] = [
   { id: "seed-cat-mittens", slug: "mittens-seed01", name: "Mittens", r2Key: "seed/mittens.webp" },
   { id: "seed-cat-shadow", slug: "shadow-seed02", name: "Shadow", r2Key: "seed/shadow.webp" },
+  {
+    id: "seed-cat-whiskers",
+    slug: "whiskers-seed03",
+    name: "Whiskers",
+    r2Key: "seed/whiskers.webp",
+  },
+  { id: "seed-cat-luna", slug: "luna-seed04", name: "Luna", r2Key: "seed/luna.webp" },
+  { id: "seed-cat-oliver", slug: "oliver-seed05", name: "Oliver", r2Key: "seed/oliver.webp" },
+  { id: "seed-cat-bella", slug: "bella-seed06", name: "Bella", r2Key: "seed/bella.webp" },
+  { id: "seed-cat-simba", slug: "simba-seed07", name: "Simba", r2Key: "seed/simba.webp" },
+  { id: "seed-cat-cleo", slug: "cleo-seed08", name: "Cleo", r2Key: "seed/cleo.webp" },
 ];
 
 const SEED_IMAGE_WIDTH = 800;
