@@ -1,26 +1,35 @@
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { auth, signIn } from "@/auth";
 import { AUTH } from "@/lib/constants";
 
 interface SignInPageProps {
-  searchParams: Promise<{ sent?: string; error?: string; callbackUrl?: string }>;
+  searchParams: Promise<{ sent?: string; type?: string; error?: string; callbackUrl?: string }>;
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const session = await auth();
-  const { sent, error, callbackUrl } = await searchParams;
+  const { sent, type, error, callbackUrl } = await searchParams;
+
+  // Only allow relative, same-origin callbacks (prevent open redirect).
+  const rawCallback = callbackUrl ?? "/";
+  const safeCallback =
+    rawCallback.startsWith("/") && !rawCallback.startsWith("//") ? rawCallback : "/";
 
   if (session?.user) {
-    redirect(callbackUrl ?? "/");
+    redirect(safeCallback);
   }
 
   async function signInWithEmail(formData: FormData) {
     "use server";
-    const email = String(formData.get("email") ?? "");
+    const parsed = z.email().safeParse(formData.get("email"));
+    if (!parsed.success) {
+      redirect(`${AUTH.SIGN_IN_PATH}?error=1`);
+    }
     await signIn(AUTH.PROVIDER_ID, {
-      email,
-      redirectTo: callbackUrl ?? "/",
+      email: parsed.data,
+      redirectTo: safeCallback,
     });
   }
 
@@ -34,7 +43,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </p>
       )}
 
-      {sent ? (
+      {sent || type ? (
         <p className="text-gray-700 text-sm">
           Check your email for a sign-in link. You can close this tab.
         </p>
