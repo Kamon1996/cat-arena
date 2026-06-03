@@ -1,8 +1,11 @@
 "use client";
 
+import { UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type ImageDropzoneProps = {
   files: File[];
@@ -48,13 +51,18 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
   const canAddMore = files.length < MAX_IMAGES_PER_CAT && !disabled;
 
   return (
-    <div>
+    <div className="flex flex-col gap-3">
       {/* biome-ignore lint/a11y/useSemanticElements: drag-and-drop target must be a div; a <button> cannot host drag events or contain an <input> child */}
       <div
         role="button"
         tabIndex={canAddMore ? 0 : -1}
         aria-label="Image upload area. Click or drag cat photos to upload."
         data-dragging={dragging}
+        className={cn(
+          "flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-input border-dashed px-4 py-8 text-center text-sm transition-colors",
+          canAddMore ? "cursor-pointer hover:bg-accent/50" : "cursor-not-allowed opacity-60",
+          dragging && "border-primary bg-accent",
+        )}
         onClick={() => {
           if (canAddMore) {
             inputRef.current?.click();
@@ -87,7 +95,11 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
           }
         }}
       >
-        <p>Drag cat photos here, or click to choose (up to {MAX_IMAGES_PER_CAT}).</p>
+        <UploadCloud className="size-6 text-muted-foreground" />
+        <p className="font-medium">Drag cat photos here, or click to choose</p>
+        <p className="text-muted-foreground text-xs">
+          JPEG, PNG or WebP · up to {MAX_IMAGES_PER_CAT} images
+        </p>
         <input
           ref={inputRef}
           type="file"
@@ -103,22 +115,39 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
         />
       </div>
 
-      <ul>
-        {files.map((file, index) => {
-          const preview = previews[index];
-          return (
-            <li key={`${file.name}-${file.size}-${file.lastModified}`}>
-              {preview ? (
-                // biome-ignore lint/performance/noImgElement: local object-URL blob preview, not a remote asset
-                <img src={preview} alt={`Preview of ${file.name}`} width={96} />
-              ) : null}
-              <button type="button" onClick={() => removeAt(index)} disabled={disabled}>
-                Remove
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {files.length > 0 ? (
+        <ul className="grid grid-cols-3 gap-2">
+          {files.map((file, index) => {
+            const preview = previews[index];
+            return (
+              <li
+                key={`${file.name}-${file.size}-${file.lastModified}`}
+                className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
+              >
+                {preview ? (
+                  // biome-ignore lint/performance/noImgElement: local object-URL blob preview, not a remote asset
+                  <img
+                    src={preview}
+                    alt={`Preview of ${file.name}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : null}
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon-xs"
+                  aria-label={`Remove ${file.name}`}
+                  disabled={disabled}
+                  onClick={() => removeAt(index)}
+                  className="absolute top-1 right-1 opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <X />
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
     </div>
   );
 }

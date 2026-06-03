@@ -1,10 +1,13 @@
 "use client";
 
+import { Check, Pencil, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { renameCat } from "@/cats/owner-actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type RenameCatFormProps = {
   catId: string;
@@ -14,11 +17,16 @@ type RenameCatFormProps = {
 
 export function RenameCatForm({ catId, currentName, disabled }: RenameCatFormProps) {
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(currentName);
   const [saving, setSaving] = useState(false);
 
   async function save(): Promise<void> {
-    if (name.trim() === currentName || saving) {
+    if (saving) {
+      return;
+    }
+    if (name.trim() === currentName) {
+      setEditing(false);
       return;
     }
     setSaving(true);
@@ -26,31 +34,67 @@ export function RenameCatForm({ catId, currentName, disabled }: RenameCatFormPro
     setSaving(false);
     if (result.ok) {
       toast.success("Name updated");
+      setEditing(false);
       router.refresh();
     } else {
       toast.error(`Could not rename (${result.error})`);
-      setName(currentName);
     }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex min-w-0 items-center gap-1.5">
+        <h3 className="truncate font-semibold text-lg leading-tight">{currentName}</h3>
+        {disabled ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Rename cat"
+            onClick={() => {
+              setName(currentName);
+              setEditing(true);
+            }}
+          >
+            <Pencil />
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (
     <form
+      className="flex items-center gap-1.5"
       onSubmit={(e) => {
         e.preventDefault();
         void save();
       }}
     >
-      <label htmlFor={`name-${catId}`}>Cat name</label>
-      <input
-        id={`name-${catId}`}
+      <Input
+        autoFocus
         value={name}
-        disabled={disabled || saving}
+        disabled={saving}
+        aria-label="Cat name"
+        className="h-8"
         onChange={(e) => setName(e.target.value)}
-        onBlur={() => void save()}
       />
-      <button type="submit" disabled={disabled || saving}>
-        Save
-      </button>
+      <Button type="submit" size="icon-sm" disabled={saving} aria-label="Save name">
+        <Check />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        disabled={saving}
+        aria-label="Cancel rename"
+        onClick={() => {
+          setEditing(false);
+          setName(currentName);
+        }}
+      >
+        <X />
+      </Button>
     </form>
   );
 }

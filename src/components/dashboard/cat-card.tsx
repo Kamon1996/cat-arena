@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +8,9 @@ import { toast } from "sonner";
 import { deleteCatImage, deleteCatOwned } from "@/cats/owner-actions";
 import { AddImage } from "@/components/dashboard/add-image";
 import { RenameCatForm } from "@/components/dashboard/rename-cat-form";
+import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { MAX_IMAGES_PER_CAT } from "@/lib/constants";
 
 export type CatCardImage = {
@@ -41,7 +45,7 @@ export function CatCard({ cat }: { cat: CatCardData }) {
   }
 
   async function removeCat(): Promise<void> {
-    if (!window.confirm(`Delete "${cat.name}" and all its images?`)) {
+    if (!window.confirm(`Delete "${cat.name}" and all of its images?`)) {
       return;
     }
     setBusy(true);
@@ -56,34 +60,66 @@ export function CatCard({ cat }: { cat: CatCardData }) {
   }
 
   return (
-    <article aria-label={cat.name}>
-      <header>
+    <Card aria-label={cat.name}>
+      <CardHeader>
         <RenameCatForm catId={cat.id} currentName={cat.name} disabled={banned || busy} />
-        <span>Status: {cat.status}</span>
-      </header>
+        <CardAction>
+          <StatusBadge status={cat.status} />
+        </CardAction>
+      </CardHeader>
 
-      <ul>
-        {cat.images.map((image) => (
-          <li key={image.id}>
-            {/* biome-ignore lint/performance/noImgElement: R2/CDN thumbnail */}
-            <img src={image.thumbUrl} alt={`${cat.name} (${image.status})`} width={120} />
-            <span>{image.status}</span>
-            <button
-              type="button"
-              onClick={() => void removeImage(image.id)}
-              disabled={banned || busy}
+      <CardContent className="flex flex-col gap-4">
+        <ul className="grid grid-cols-3 gap-2">
+          {cat.images.map((image) => (
+            <li
+              key={image.id}
+              className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
             >
-              Delete image
-            </button>
-          </li>
-        ))}
-      </ul>
+              {/* biome-ignore lint/performance/noImgElement: R2/CDN thumbnail, not a local asset */}
+              <img
+                src={image.thumbUrl}
+                alt={`${cat.name}`}
+                className="h-full w-full object-cover"
+              />
+              <StatusBadge status={image.status} className="absolute top-1 left-1 shadow-sm" />
+              {banned ? null : (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon-xs"
+                  aria-label="Delete image"
+                  disabled={busy}
+                  onClick={() => void removeImage(image.id)}
+                  className="absolute top-1 right-1 opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <Trash2 />
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
 
-      {!banned ? <AddImage catId={cat.id} remaining={remaining} disabled={busy} /> : null}
+        {banned ? (
+          <p className="text-muted-foreground text-sm">
+            This cat is banned and can no longer be edited.
+          </p>
+        ) : (
+          <AddImage catId={cat.id} remaining={remaining} disabled={busy} />
+        )}
+      </CardContent>
 
-      <button type="button" onClick={() => void removeCat()} disabled={busy}>
-        Delete cat
-      </button>
-    </article>
+      <CardFooter>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          disabled={busy}
+          onClick={() => void removeCat()}
+        >
+          <Trash2 />
+          Delete cat
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

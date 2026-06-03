@@ -1,10 +1,12 @@
 "use client";
 
+import { ImagePlus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { addCatImage } from "@/cats/owner-actions";
+import { Button } from "@/components/ui/button";
 import { ImageDropzone } from "@/components/upload/image-dropzone";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
 
@@ -20,7 +22,7 @@ export function AddImage({ catId, remaining, disabled }: AddImageProps) {
   const [busy, setBusy] = useState(false);
 
   if (remaining <= 0) {
-    return <p>Max images reached.</p>;
+    return <p className="text-muted-foreground text-sm">Maximum images reached.</p>;
   }
 
   async function submit(): Promise<void> {
@@ -36,7 +38,7 @@ export function AddImage({ catId, remaining, disabled }: AddImageProps) {
           throw new Error(result.error);
         }
       }
-      toast.success("Image added (pending review)");
+      toast.success("Image added — pending review");
       setFiles([]);
       router.refresh();
     } catch (err) {
@@ -47,11 +49,18 @@ export function AddImage({ catId, remaining, disabled }: AddImageProps) {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <ImageDropzone files={files} onChange={setFiles} disabled={disabled || busy} />
-      <button type="button" onClick={() => void submit()} disabled={disabled || busy}>
+      <Button
+        type="button"
+        size="sm"
+        className="self-start"
+        onClick={() => void submit()}
+        disabled={disabled || busy || files.length === 0}
+      >
+        {busy ? <Loader2 className="animate-spin" /> : <ImagePlus />}
         {busy ? "Uploading…" : "Add image"}
-      </button>
+      </Button>
     </div>
   );
 }
