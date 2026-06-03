@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { PRESIGN_TTL_SECONDS } from "@/lib/constants";
@@ -28,4 +28,24 @@ export async function presignPut(key: string, contentType: string): Promise<stri
 export function publicUrl(key: string): string {
   const base = env.R2_PUBLIC_URL.replace(/\/+$/, "");
   return `${base}/${key}`;
+}
+
+/**
+ * Delete R2 objects by key. Best-effort: storage cleanup must never fail a
+ * user-facing DB mutation, so send errors are swallowed (objects may orphan).
+ */
+export async function deleteObjects(keys: string[]): Promise<void> {
+  if (keys.length === 0) {
+    return;
+  }
+  try {
+    await r2.send(
+      new DeleteObjectsCommand({
+        Bucket: env.R2_BUCKET,
+        Delete: { Objects: keys.map((Key) => ({ Key })) },
+      }),
+    );
+  } catch {
+    // Orphaned objects are acceptable; the user action already succeeded.
+  }
 }
