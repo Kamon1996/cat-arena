@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { ImageDropzone } from "@/components/upload/image-dropzone";
+import { uploadToR2 } from "@/components/upload/upload-to-r2";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 
 const MIN_NAME = 1;
@@ -31,31 +32,6 @@ const FormSchema = z.object({
 
 type UploadFormValues = z.infer<typeof FormSchema>;
 
-type SignResponse = { uploadUrl: string; r2Key: string };
-
-async function uploadOne(file: File): Promise<{ r2Key: string }> {
-  const signRes = await fetch("/api/upload/sign", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ contentType: file.type, size: file.size }),
-  });
-  if (!signRes.ok) {
-    throw new Error("Could not get upload URL");
-  }
-  const { uploadUrl, r2Key } = (await signRes.json()) as SignResponse;
-
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "content-type": file.type },
-    body: file,
-  });
-  if (!putRes.ok) {
-    throw new Error("Upload failed");
-  }
-
-  return { r2Key };
-}
-
 export function UploadForm() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -77,7 +53,7 @@ export function UploadForm() {
   async function onSubmit(values: UploadFormValues): Promise<void> {
     setSubmitError(null);
     try {
-      const uploaded = await Promise.all(values.files.map(uploadOne));
+      const uploaded = await Promise.all(values.files.map(uploadToR2));
       const res = await fetch("/api/cats", {
         method: "POST",
         headers: { "content-type": "application/json" },
