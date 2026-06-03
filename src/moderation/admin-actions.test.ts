@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const tx = {
-  catImage: { update: vi.fn() },
+  catImage: { update: vi.fn(), updateMany: vi.fn() },
   cat: { update: vi.fn(), findUnique: vi.fn() },
 };
 
@@ -15,7 +15,14 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import { approveImage, banCat, deleteCat, hideCat, rejectImage } from "./admin-actions";
+import {
+  approveCatImages,
+  approveImage,
+  banCat,
+  deleteCat,
+  hideCat,
+  rejectImage,
+} from "./admin-actions";
 
 const IMAGE_ID = "img_1";
 const CAT_ID = "cat_1";
@@ -74,5 +81,27 @@ describe("admin-actions", () => {
   it("deleteCat deletes the cat", async () => {
     await deleteCat(CAT_ID);
     expect(prisma.cat.delete).toHaveBeenCalledWith({ where: { id: CAT_ID } });
+  });
+
+  describe("approveCatImages", () => {
+    it("approves all PENDING images and promotes a non-banned cat", async () => {
+      tx.cat.findUnique.mockResolvedValueOnce({ id: CAT_ID, status: "PENDING" });
+      await approveCatImages(CAT_ID);
+      expect(tx.catImage.updateMany).toHaveBeenCalledWith({
+        where: { catId: CAT_ID, status: "PENDING" },
+        data: { status: "APPROVED" },
+      });
+      expect(tx.cat.update).toHaveBeenCalledWith({
+        where: { id: CAT_ID },
+        data: { status: "ACTIVE", approvedAt: expect.any(Date) },
+      });
+    });
+
+    it("does NOT promote a banned cat", async () => {
+      tx.cat.findUnique.mockResolvedValueOnce({ id: CAT_ID, status: "BANNED" });
+      await approveCatImages(CAT_ID);
+      expect(tx.catImage.updateMany).toHaveBeenCalled();
+      expect(tx.cat.update).not.toHaveBeenCalled();
+    });
   });
 });

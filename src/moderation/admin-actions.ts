@@ -45,3 +45,23 @@ export async function banCat(catId: string): Promise<void> {
 export async function deleteCat(catId: string): Promise<void> {
   await prisma.cat.delete({ where: { id: catId } });
 }
+
+/** Approve ALL pending images of a cat; promote it to ACTIVE unless BANNED. */
+export async function approveCatImages(catId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.catImage.updateMany({
+      where: { catId, status: "PENDING" },
+      data: { status: "APPROVED" },
+    });
+    const cat = await tx.cat.findUnique({
+      where: { id: catId },
+      select: { status: true },
+    });
+    if (cat && cat.status !== "BANNED") {
+      await tx.cat.update({
+        where: { id: catId },
+        data: { status: "ACTIVE", approvedAt: new Date() },
+      });
+    }
+  });
+}
