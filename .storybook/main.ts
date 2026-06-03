@@ -6,7 +6,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
-  addons: [],
+  // addon-docs renders the autodocs "Docs" page for component metas tagged
+  // tags: ["autodocs"] (page-view stories deliberately omit the tag).
+  addons: ["@storybook/addon-docs"],
   framework: { name: "@storybook/nextjs-vite", options: {} },
   staticDirs: ["../public"],
   async viteFinal(cfg) {
