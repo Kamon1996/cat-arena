@@ -1,15 +1,22 @@
 import { requireModerator } from "@/auth/guards";
-import { ModerationQueue } from "@/components/admin/moderation-queue";
+import { ModerationList } from "@/components/admin/moderation-list";
 import { ReportQueue } from "@/components/admin/report-queue";
+import { getModerationCats } from "@/moderation/moderation-queue";
 
 export default async function AdminPage() {
-  await requireModerator();
+  const session = await requireModerator();
+  const first = await getModerationCats();
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8">
       <h1 className="font-bold text-2xl tracking-tight">Moderation</h1>
-      <p className="mb-6 text-muted-foreground text-sm">Review pending images and reported cats.</p>
-      <div className="flex flex-col gap-10">
-        <ModerationQueue />
+      <p className="mb-6 text-muted-foreground text-sm">Review pending cat images.</p>
+      <ModerationList
+        initial={first}
+        isAdmin={session.user.role === "ADMIN"}
+        currentUserId={session.user.id}
+      />
+      <div className="mt-10">
         <ReportQueue />
       </div>
     </main>

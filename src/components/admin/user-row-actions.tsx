@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { banUser, setUserRole, unbanUser } from "@/admin/user-actions";
+import { ConfirmButton } from "@/components/admin/confirm-button";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -51,18 +52,24 @@ export function UserRowActions({
     }
   }
 
-  async function onBanToggle(): Promise<void> {
-    if (
-      !user.banned &&
-      !window.confirm(`Ban ${user.email ?? "this user"}? Their cats will be deleted.`)
-    ) {
-      return;
-    }
+  async function doBan(): Promise<void> {
     setBusy(true);
-    const result = user.banned ? await unbanUser(user.id) : await banUser(user.id);
+    const result = await banUser(user.id);
     setBusy(false);
     if (result.ok) {
-      toast.success(user.banned ? "User unbanned" : "User banned");
+      toast.success("User banned");
+      router.refresh();
+    } else {
+      toast.error(`Action failed (${result.error})`);
+    }
+  }
+
+  async function doUnban(): Promise<void> {
+    setBusy(true);
+    const result = await unbanUser(user.id);
+    setBusy(false);
+    if (result.ok) {
+      toast.success("User unbanned");
       router.refresh();
     } else {
       toast.error(`Action failed (${result.error})`);
@@ -80,15 +87,26 @@ export function UserRowActions({
           <SelectItem value="MODERATOR">Moderator</SelectItem>
         </SelectContent>
       </Select>
-      <Button
-        type="button"
-        size="sm"
-        variant={user.banned ? "outline" : "destructive"}
-        disabled={busy}
-        onClick={() => void onBanToggle()}
-      >
-        {user.banned ? "Unban" : "Ban"}
-      </Button>
+      {user.banned ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => void doUnban()}
+        >
+          Unban
+        </Button>
+      ) : (
+        <ConfirmButton
+          label="Ban"
+          title={`Ban ${user.email ?? "this user"}?`}
+          description="Their cats will be deleted. This cannot be undone."
+          confirmLabel="Ban user"
+          disabled={busy}
+          onConfirm={() => void doBan()}
+        />
+      )}
     </div>
   );
 }

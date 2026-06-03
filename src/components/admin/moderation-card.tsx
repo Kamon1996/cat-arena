@@ -54,12 +54,17 @@ export function ModerationCard({ cat, isAdmin, currentUserId, onResolved }: Mode
     errPrefix: string,
   ): Promise<void> {
     setBusy(true);
-    const res = await action;
-    setBusy(false);
-    if (res.ok) {
-      onOk();
-    } else {
-      toast.error(`${errPrefix} (${res.error ?? "failed"})`);
+    try {
+      const res = await action;
+      if (res.ok) {
+        onOk();
+      } else {
+        toast.error(`${errPrefix} (${res.error ?? "failed"})`);
+      }
+    } catch {
+      toast.error(`${errPrefix} (failed)`);
+    } finally {
+      setBusy(false);
     }
   }
 
