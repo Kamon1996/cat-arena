@@ -49,10 +49,13 @@ export async function deleteCat(catId: string): Promise<void> {
 /** Approve ALL pending images of a cat; promote it to ACTIVE unless BANNED. */
 export async function approveCatImages(catId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await tx.catImage.updateMany({
+    const { count } = await tx.catImage.updateMany({
       where: { catId, status: "PENDING" },
       data: { status: "APPROVED" },
     });
+    if (count === 0) {
+      return;
+    }
     const cat = await tx.cat.findUnique({
       where: { id: catId },
       select: { status: true },

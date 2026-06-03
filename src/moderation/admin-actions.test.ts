@@ -84,6 +84,10 @@ describe("admin-actions", () => {
   });
 
   describe("approveCatImages", () => {
+    beforeEach(() => {
+      tx.catImage.updateMany.mockResolvedValue({ count: 1 });
+    });
+
     it("approves all PENDING images and promotes a non-banned cat", async () => {
       tx.cat.findUnique.mockResolvedValueOnce({ id: CAT_ID, status: "PENDING" });
       await approveCatImages(CAT_ID);
@@ -100,7 +104,17 @@ describe("admin-actions", () => {
     it("does NOT promote a banned cat", async () => {
       tx.cat.findUnique.mockResolvedValueOnce({ id: CAT_ID, status: "BANNED" });
       await approveCatImages(CAT_ID);
-      expect(tx.catImage.updateMany).toHaveBeenCalled();
+      expect(tx.catImage.updateMany).toHaveBeenCalledWith({
+        where: { catId: CAT_ID, status: "PENDING" },
+        data: { status: "APPROVED" },
+      });
+      expect(tx.cat.update).not.toHaveBeenCalled();
+    });
+
+    it("does NOT promote when no pending images were approved", async () => {
+      tx.catImage.updateMany.mockResolvedValueOnce({ count: 0 });
+      await approveCatImages(CAT_ID);
+      expect(tx.cat.findUnique).not.toHaveBeenCalled();
       expect(tx.cat.update).not.toHaveBeenCalled();
     });
   });
