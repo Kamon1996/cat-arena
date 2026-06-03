@@ -1,4 +1,3 @@
-import type { ImageStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -6,8 +5,7 @@ import { auth } from "@/auth";
 import { MAX_CATS_PER_USER, MAX_IMAGES_PER_CAT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { slug } from "@/lib/slug";
-import { screenImage } from "@/moderation/screen-image";
-import { processImage } from "@/storage/process-image";
+import { ingestImage } from "@/storage/ingest-image";
 
 const MIN_NAME = 1;
 const MAX_NAME = 60;
@@ -54,8 +52,7 @@ export async function POST(request: Request): Promise<Response> {
     const processed = await Promise.all(
       images.map(async (img, index) => {
         const id = imageIdFromKey(img.r2Key);
-        const { width, height, screenBuffer } = await processImage(id);
-        const status: ImageStatus = await screenImage(screenBuffer);
+        const { width, height, status } = await ingestImage(id);
         return { id, r2Key: img.r2Key, width, height, position: index, status };
       }),
     );
