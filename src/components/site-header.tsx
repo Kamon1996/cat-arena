@@ -13,6 +13,9 @@ export async function SiteHeader() {
       <nav className="flex items-center gap-4 text-sm">
         {session?.user ? (
           <>
+            <Link href="/dashboard" className="underline">
+              My cats
+            </Link>
             <span className="text-muted-foreground">{session.user.email}</span>
             <form
               action={async () => {
