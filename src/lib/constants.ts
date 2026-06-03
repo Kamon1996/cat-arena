@@ -47,3 +47,12 @@ export const SEEN_BUFFER_SIZE = 50;
 // TanStack Query timings for the duel
 export const PAIR_STALE_TIME_MS = 0;
 export const PAIR_GC_TIME_MS = 5 * 60 * 1000;
+
+// Auth.js (magic-link) — provider id, route paths, token lifetime, email subject
+export const AUTH = {
+  PROVIDER_ID: "resend",
+  SIGN_IN_PATH: "/signin",
+  VERIFY_REQUEST_PATH: "/signin?sent=1",
+  MAGIC_LINK_MAX_AGE_SECONDS: 15 * 60, // 15 min
+  EMAIL_SUBJECT: "Sign in to Cat Arena",
+} as const;
