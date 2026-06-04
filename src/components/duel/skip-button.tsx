@@ -3,6 +3,8 @@
 import { Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { captureEvent } from "@/lib/analytics";
+import { ANALYTICS_EVENT } from "@/lib/constants";
 
 type SkipButtonProps = {
   onSkip: () => void;
@@ -15,7 +17,10 @@ export function SkipButton({ onSkip, disabled }: SkipButtonProps) {
       type="button"
       variant="ghost"
       aria-label="Skip and show a new pair"
-      onClick={onSkip}
+      onClick={() => {
+        captureEvent(ANALYTICS_EVENT.SKIP);
+        onSkip();
+      }}
       disabled={disabled}
       className="text-muted-foreground"
     >

@@ -1,6 +1,7 @@
 import { MotionConfig } from "motion/react";
 import type { Metadata } from "next";
 
+import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteHeader } from "@/components/site-header";
@@ -36,11 +37,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SiteHeader />
-          <MotionConfig reducedMotion="user">
-            <QueryProvider>{children}</QueryProvider>
-          </MotionConfig>
-          <Toaster />
+          <PostHogProvider>
+            <SiteHeader />
+            <MotionConfig reducedMotion="user">
+              <QueryProvider>{children}</QueryProvider>
+            </MotionConfig>
+            <Toaster />
+          </PostHogProvider>
         </ThemeProvider>
       </body>
     </html>
