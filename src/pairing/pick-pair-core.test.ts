@@ -92,12 +92,26 @@ describe("pickPairCore", () => {
     expect(result?.b.id).toBe("near");
   });
 
-  it("returns null when no B is inside the window", () => {
+  it("falls back to the closest eligible B when none is inside the window", () => {
     const aScore = 800;
     const result = pickPairCore({
       aPool: [cat("a", aScore, 350, 0)],
-      bPool: [cat("far", aScore + PAIR_B_SCORE_WINDOW + 1, 90, 5)],
+      bPool: [
+        cat("far", aScore + PAIR_B_SCORE_WINDOW + 1, 90, 5),
+        cat("farther", aScore + PAIR_B_SCORE_WINDOW + 400, 90, 5),
+      ],
       seenCatIds: [],
+      rng: seededRng([0, 0.99]),
+    });
+    // No in-window opponent, but eligible cats exist → still forms a pair (closest).
+    expect(result?.b.id).toBe("far");
+  });
+
+  it("returns null when the only other cats are A itself or already seen", () => {
+    const result = pickPairCore({
+      aPool: [cat("a", 800, 350, 0)],
+      bPool: [cat("a", 800, 350, 0), cat("seen", 810, 90, 5)],
+      seenCatIds: ["seen"],
       rng: seededRng([0, 0.99]),
     });
     expect(result).toBeNull();

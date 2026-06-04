@@ -65,26 +65,32 @@ function pickPairCore(input: PickPairCoreInput): PickedPairCore | null {
   }
 
   const seen = new Set(seenCatIds);
+  // Eligible opponents: exclude A itself and recently-seen cats, nearest score first.
   const eligibleB = bPool
-    .filter(
-      (c) => c.id !== a.id && !seen.has(c.id) && Math.abs(c.score - a.score) <= PAIR_B_SCORE_WINDOW,
-    )
+    .filter((c) => c.id !== a.id && !seen.has(c.id))
     .sort((x, y) => Math.abs(x.score - a.score) - Math.abs(y.score - a.score));
 
-  const closest = eligibleB[0]; // sorted ascending by score distance: nearest first
-  if (!closest) {
+  if (eligibleB.length === 0 || aPool.length + eligibleB.length < PAIR_MIN_POOL) {
     return null;
   }
 
-  if (aPool.length + eligibleB.length < PAIR_MIN_POOL) {
+  // Prefer an opponent within the score window for a close matchup; if none qualify
+  // (small or score-diverged pool), fall back to the closest eligible cat so a pair
+  // is always formed when at least two eligible cats exist. The window is a quality
+  // preference, not a hard requirement — without this the duel 404s once scores spread.
+  const withinWindow = eligibleB.filter((c) => Math.abs(c.score - a.score) <= PAIR_B_SCORE_WINDOW);
+  const pool = withinWindow.length > 0 ? withinWindow : eligibleB;
+
+  const closest = pool[0]; // sorted ascending by score distance: nearest first
+  if (!closest) {
     return null;
   }
 
   const rollEpsilon = rng() < PAIR_EPSILON;
   let b: Candidate = closest;
-  if (rollEpsilon && eligibleB.length > 1) {
-    const randomIndex = Math.min(Math.floor(rng() * eligibleB.length), eligibleB.length - 1);
-    b = eligibleB[randomIndex] ?? closest;
+  if (rollEpsilon && pool.length > 1) {
+    const randomIndex = Math.min(Math.floor(rng() * pool.length), pool.length - 1);
+    b = pool[randomIndex] ?? closest;
   }
 
   return { a, b };
