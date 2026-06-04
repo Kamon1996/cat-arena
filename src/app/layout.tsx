@@ -5,12 +5,17 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_DESCRIPTION, SITE_LOCALE, SITE_NAME, SITE_URL } from "@/lib/constants";
 import { clashDisplay, generalSans } from "./fonts/local-fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "WhosMeowing", template: "%s | WhosMeowing" },
-  description: "Pick the better of two cats in 1-vs-1 duels and watch them climb the leaderboard.",
+  // Resolves relative canonical/OG URLs (incl. the per-cat opengraph-image).
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  openGraph: { siteName: SITE_NAME, locale: SITE_LOCALE, type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({
