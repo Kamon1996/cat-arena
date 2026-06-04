@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -13,4 +14,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Source-map upload runs only when SENTRY_AUTH_TOKEN/ORG/PROJECT are set (CI);
+// locally it's skipped silently. Error reporting works from the DSN regardless.
+// Conditional spread keeps optional keys absent (not `undefined`) for strict tsconfig.
+export default withSentryConfig(nextConfig, {
+  silent: !process.env.CI,
+  ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
+  ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
+  ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
+});
