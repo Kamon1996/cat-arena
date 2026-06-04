@@ -6,6 +6,7 @@ const { mockVerify, mockCheck, mockApplyVote, mockConsumeNonce, tx } = vi.hoiste
   mockApplyVote: vi.fn(),
   mockConsumeNonce: vi.fn(),
   tx: {
+    cat: { findMany: vi.fn() },
     catOrg: { findMany: vi.fn(), update: vi.fn() },
     vote: { create: vi.fn() },
   },
@@ -41,6 +42,10 @@ describe("POST /api/vote", () => {
     vi.clearAllMocks();
     mockCheck.mockResolvedValue({ ok: true, remaining: 9 });
     mockConsumeNonce.mockResolvedValue(true);
+    tx.cat.findMany.mockResolvedValue([
+      { id: "ca", status: "ACTIVE" },
+      { id: "cb", status: "ACTIVE" },
+    ]);
     tx.catOrg.findMany.mockResolvedValue([]);
     mockApplyVote.mockResolvedValue({
       winner: { id: "ca", rating: 1520, rd: 340, score: 840 },
@@ -81,5 +86,17 @@ describe("POST /api/vote", () => {
     expect(body.winner.id).toBe("ca");
     expect(mockApplyVote).toHaveBeenCalledWith(tx, "ca", "cb");
     expect(tx.vote.create).toHaveBeenCalledOnce();
+  });
+
+  it("returns 409 (and skips the rating update) when a cat is no longer ACTIVE", async () => {
+    mockVerify.mockReturnValue({ a: "ca", b: "cb", nonce: "n", exp: 9e9, scope: "global" });
+    tx.cat.findMany.mockResolvedValue([
+      { id: "ca", status: "ACTIVE" },
+      { id: "cb", status: "HIDDEN" },
+    ]);
+    const res = await post(valid);
+    expect(res.status).toBe(409);
+    expect(mockApplyVote).not.toHaveBeenCalled();
+    expect(tx.vote.create).not.toHaveBeenCalled();
   });
 });

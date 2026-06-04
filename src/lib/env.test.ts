@@ -40,4 +40,13 @@ describe("envSchema", () => {
     const result = envSchema.safeParse({ ...VALID_RAW, R2_PUBLIC_URL: "not-a-url" });
     expect(result.success).toBe(false);
   });
+
+  it("rejects empty R2 API credentials", () => {
+    const result = envSchema.safeParse({
+      ...VALID_RAW,
+      R2_ACCESS_KEY_ID: "",
+      R2_SECRET_ACCESS_KEY: "",
+    });
+    expect(result.success).toBe(false);
+  });
 });

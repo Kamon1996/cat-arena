@@ -24,6 +24,7 @@ const SHARED_ORG_ID = "org-shared";
 const UNSHARED_ORG_ID = "org-other";
 
 const tx = {
+  cat: { findMany: vi.fn() },
   catOrg: { findMany: vi.fn(), update: vi.fn() },
   vote: { create: vi.fn() },
 };
@@ -62,6 +63,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   check.mockResolvedValue({ ok: true, remaining: 9 });
   consumeNonce.mockResolvedValue(true);
+  tx.cat.findMany.mockResolvedValue([
+    { id: WINNER_ID, status: "ACTIVE" },
+    { id: LOSER_ID, status: "ACTIVE" },
+  ]);
   applyVote.mockResolvedValue({
     winner: { id: WINNER_ID, rating: 1520, rd: 340, score: 840 },
     loser: { id: LOSER_ID, rating: 1480, rd: 340, score: 800 },

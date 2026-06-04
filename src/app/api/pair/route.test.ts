@@ -28,7 +28,9 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { GET } from "@/app/api/pair/route";
+import { SEEN_COOKIE } from "@/lib/constants";
 import { pickPair } from "@/pairing/pick-pair";
+import { decodeSeen } from "@/pairing/seen-buffer";
 
 const req = (url: string) => new NextRequest(new URL(url, "http://t"));
 
@@ -67,5 +69,37 @@ describe("GET /api/pair", () => {
     expect(body.a.name).toBe("Alpha");
     expect(body.a.images[0].url).toBe("https://cdn.test/ca/orig");
     expect(body.b.id).toBe("cb");
+  });
+
+  it("persists the served pair into the seen-buffer cookie", async () => {
+    vi.mocked(pickPair).mockResolvedValue({
+      a: { id: "ca", rating: 1500, rd: 350, score: 800, timesShown: 0 },
+      b: { id: "cb", rating: 1500, rd: 350, score: 800, timesShown: 0 },
+    });
+    findFirst.mockImplementation(async ({ where }: { where: { id: string } }) => ({
+      id: where.id,
+      name: where.id,
+      slug: `${where.id}-slug`,
+      images: [{ r2Key: `${where.id}/orig`, width: 800, height: 600, position: 0 }],
+    }));
+    await GET(req("http://t/api/pair?scope=global"));
+    expect(decodeSeen(cookieStore.get(SEEN_COOKIE))).toEqual(["ca", "cb"]);
+  });
+
+  it("merges the new pair ahead of previously-seen ids", async () => {
+    cookieStore.set(SEEN_COOKIE, JSON.stringify(["cb", "cz"]));
+    vi.mocked(pickPair).mockResolvedValue({
+      a: { id: "ca", rating: 1500, rd: 350, score: 800, timesShown: 0 },
+      b: { id: "cb", rating: 1500, rd: 350, score: 800, timesShown: 0 },
+    });
+    findFirst.mockImplementation(async ({ where }: { where: { id: string } }) => ({
+      id: where.id,
+      name: where.id,
+      slug: `${where.id}-slug`,
+      images: [{ r2Key: `${where.id}/orig`, width: 800, height: 600, position: 0 }],
+    }));
+    await GET(req("http://t/api/pair?scope=global"));
+    // newest-first, de-duped: ca, cb (moved up), then the older-unique cz
+    expect(decodeSeen(cookieStore.get(SEEN_COOKIE))).toEqual(["ca", "cb", "cz"]);
   });
 });

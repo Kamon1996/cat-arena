@@ -5,11 +5,6 @@ vi.mock("@/lib/env", () => ({
   env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
 }));
 
-vi.mock("./nsfw-fallback", () => ({
-  nsfwFallbackScore: vi.fn(async () => 0.1),
-}));
-
-import { nsfwFallbackScore } from "./nsfw-fallback";
 import { screenImage } from "./screen-image";
 
 const BUF = Buffer.from([0x01, 0x02, 0x03]);
@@ -73,17 +68,9 @@ describe("screenImage", () => {
     expect(await screenImage(BUF)).toBe("PENDING");
   });
 
-  it("falls back to NSFWJS and returns PENDING when Workers AI errors", async () => {
+  it("fails safe to PENDING (manual queue) when Workers AI is unavailable", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429 }));
-    vi.mocked(nsfwFallbackScore).mockResolvedValueOnce(0.05);
-    // clean per fallback, cat-confidence unknown → PENDING
+    // No local fallback model — an unscreened image must never auto-approve/reject.
     expect(await screenImage(BUF)).toBe("PENDING");
-    expect(nsfwFallbackScore).toHaveBeenCalledOnce();
-  });
-
-  it("falls back and REJECTS when NSFWJS says unsafe", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429 }));
-    vi.mocked(nsfwFallbackScore).mockResolvedValueOnce(0.95);
-    expect(await screenImage(BUF)).toBe("REJECTED");
   });
 });

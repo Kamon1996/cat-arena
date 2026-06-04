@@ -7,12 +7,12 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { getOrCreateAnonId, voterKeyFor } from "@/lib/anon-id";
 import type { ApiError, PairCat, PairResponse } from "@/lib/api-types";
-import { PAIR_TOKEN_TTL_SECONDS, SEEN_COOKIE } from "@/lib/constants";
+import { PAIR_TOKEN_TTL_SECONDS, SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from "@/lib/constants";
 import { signPairToken } from "@/lib/pair-token";
 import { prisma } from "@/lib/prisma";
 import { publicUrl } from "@/lib/r2";
 import { type PairScope, pickPair } from "@/pairing/pick-pair";
-import { decodeSeen } from "@/pairing/seen-buffer";
+import { appendSeen, decodeSeen, encodeSeen } from "@/pairing/seen-buffer";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +97,17 @@ export async function GET(request: NextRequest): Promise<NextResponse<PairRespon
       nonce: randomBytes(NONCE_BYTES).toString("base64url"),
       exp: Math.floor(Date.now() / MILLIS_PER_SECOND) + PAIR_TOKEN_TTL_SECONDS,
       scope: tokenScope,
+    });
+
+    // Persist the served pair so the next pick can exclude recently-seen cats
+    // (the ring buffer is read at the top of this handler; nothing wrote it back).
+    const nextSeen = appendSeen(seenCatIds, [picked.a.id, picked.b.id]);
+    jar.set(SEEN_COOKIE, encodeSeen(nextSeen), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: SEEN_COOKIE_MAX_AGE_SECONDS,
     });
 
     return NextResponse.json({ token, a, b }, { status: 200 });

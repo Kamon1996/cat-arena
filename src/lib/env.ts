@@ -14,10 +14,8 @@ export const envSchema = z.object({
   EMAIL_FROM: z.email(),
   // Cloudflare R2 (S3 API)
   R2_ACCOUNT_ID: z.string().min(1),
-  // R2 API credentials are provisioned in phase 06; allow empty until then so the
-  // validated env loads for phases 02–05 (tighten back to .min(1) once R2 is wired).
-  R2_ACCESS_KEY_ID: z.string(),
-  R2_SECRET_ACCESS_KEY: z.string(),
+  R2_ACCESS_KEY_ID: z.string().min(1),
+  R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET: z.string().min(1),
   R2_PUBLIC_URL: z.url(),
   // Upstash Redis (rate limiting)

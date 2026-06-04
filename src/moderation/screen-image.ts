@@ -3,7 +3,6 @@ import type { ImageStatus } from "@prisma/client";
 
 import { CAT_MIN_CONFIDENCE, NSFW_PENDING_THRESHOLD, NSFW_REJECT_THRESHOLD } from "@/lib/constants";
 import { env } from "@/lib/env";
-import { nsfwFallbackScore } from "@/moderation/nsfw-fallback";
 
 const NSFW_MODEL = "@cf/falcons-ai/nsfw_image_detection";
 const CLASSIFY_MODEL = "@cf/microsoft/resnet-50";
@@ -56,9 +55,10 @@ function decide(nsfw: number, catConf: number | null): ImageStatus {
 }
 
 /**
- * Auto-screen one image. Tries Cloudflare Workers AI (NSFW + classification);
- * on any failure falls back to local NSFWJS for the NSFW signal and treats
- * cat-confidence as unknown (never auto-approves on the fallback path).
+ * Auto-screen one image with Cloudflare Workers AI (NSFW + classification).
+ * There is no local model fallback: if Workers AI is unavailable we fail safe to
+ * PENDING so the image lands in the manual moderation queue (never auto-approved
+ * or auto-rejected without a real signal).
  */
 export async function screenImage(image: Buffer): Promise<ImageStatus> {
   try {
@@ -68,7 +68,6 @@ export async function screenImage(image: Buffer): Promise<ImageStatus> {
     ]);
     return decide(nsfwScore(nsfwLabels), catConfidence(classifyLabels));
   } catch {
-    const nsfw = await nsfwFallbackScore(image);
-    return decide(nsfw, null);
+    return "PENDING";
   }
 }

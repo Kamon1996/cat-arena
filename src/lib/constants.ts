@@ -43,6 +43,7 @@ export const SEEN_COOKIE = "ca_seen";
 
 // Recent-seen ring buffer (cat ids), no DB
 export const SEEN_BUFFER_SIZE = 50;
+export const SEEN_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 // TanStack Query timings for the duel
 export const PAIR_STALE_TIME_MS = 0;

@@ -1,3 +1,4 @@
+import { CatStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -76,7 +77,20 @@ export async function POST(request: Request): Promise<NextResponse<VoteResponse 
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const outcome = await prisma.$transaction(async (tx) => {
+      // Re-check ACTIVE inside the tx: a cat can be hidden/banned by a moderator
+      // between pair fetch and vote submit (the token is valid for 30 min). Without
+      // this, a stale token could still move a hidden/banned cat's rating.
+      const cats = await tx.cat.findMany({
+        where: { id: { in: [winnerCatId, loserCatId] } },
+        select: { id: true, status: true },
+      });
+      const bothActive =
+        cats.length === DISTINCT_PAIR && cats.every((cat) => cat.status === CatStatus.ACTIVE);
+      if (!bothActive) {
+        return { ok: false as const };
+      }
+
       const ratings = await applyVote(tx, winnerCatId, loserCatId);
 
       const [winnerOrgs, loserOrgs] = await Promise.all([
@@ -127,11 +141,15 @@ export async function POST(request: Request): Promise<NextResponse<VoteResponse 
         data: { winnerCatId, loserCatId, voterKey },
       });
 
-      return ratings;
+      return { ok: true as const, ratings };
     });
 
+    if (!outcome.ok) {
+      return NextResponse.json({ error: "Cat is no longer available" }, { status: 409 });
+    }
+
     return NextResponse.json(
-      { ok: true, winner: result.winner, loser: result.loser },
+      { ok: true, winner: outcome.ratings.winner, loser: outcome.ratings.loser },
       { status: 200 },
     );
   } catch {

@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Native/server-only deps used by the upload+moderation pipeline must NOT be
-  // bundled by webpack — they ship platform binaries (sharp, tfjs-node) or load
-  // models at runtime (nsfwjs). Keeping them external prevents broken builds.
-  serverExternalPackages: ["sharp", "@tensorflow/tfjs-node", "nsfwjs"],
+  // sharp ships platform binaries and must NOT be bundled by webpack — keeping it
+  // external prevents broken builds. (Image auto-screening is Cloudflare Workers AI
+  // over HTTP, so there are no local model deps left to externalize.)
+  serverExternalPackages: ["sharp"],
 };
 
 export default nextConfig;
