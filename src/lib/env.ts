@@ -9,9 +9,12 @@ export const envSchema = z.object({
   // Auth.js v5
   AUTH_SECRET: z.string().min(MIN_SECRET_LENGTH),
   AUTH_URL: z.url(),
-  // Resend magic-link email
-  RESEND_API_KEY: z.string().min(1),
-  EMAIL_FROM: z.email(),
+  // Google OAuth (active sign-in method) — auto-detected by Auth.js, validated here too.
+  AUTH_GOOGLE_ID: z.string().min(1),
+  AUTH_GOOGLE_SECRET: z.string().min(1),
+  // Resend magic-link email — STASHED (Google OAuth is active); optional until re-enabled.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.email().optional(),
   // Cloudflare R2 (S3 API)
   R2_ACCOUNT_ID: z.string().min(1),
   R2_ACCESS_KEY_ID: z.string().min(1),

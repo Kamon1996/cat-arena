@@ -43,5 +43,12 @@
   // ignoreAtRules in .stylelintrc.json, is the single source of truth for CSS correctness.
   "css.validate": false,
   "scss.validate": false,
-  "less.validate": false
+  "less.validate": false,
+
+  // ── Tailwind CSS IntelliSense (bradlc.vscode-tailwindcss) ──
+  // Autocomplete, hover preview, and conflict / invalid-@apply lint for utility classes.
+  // `classFunctions` extends that support into cva()/cn()/clsx() calls (CVA variants + the
+  // cn() helper), not just className="…". Tailwind v4 is auto-detected from
+  // `@import "tailwindcss"` in src/app/globals.css — no config file needed.
+  "tailwindCSS.classFunctions": ["cva", "cn", "clsx"]
 }

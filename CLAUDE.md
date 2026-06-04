@@ -64,6 +64,7 @@ tests, tooling, and infra.
 - **Components:** small, single-purpose; build variants with **CVA**, not conditional class soup.
 - **Validation:** validate all external input with **Zod** at the boundary (API handlers, server actions, forms).
 - **Errors:** typed results at API boundaries; React error boundaries in the UI.
+- **Toasts:** always use `catToast` from `@/components/ui/cat-toast` (sticker for everyday feedback, mascot for upload/delight); never call sonner's `toast.*` directly — the branded card owns all chrome and `sonner.tsx` is just the themed host.
 
 ## Skill routing (canonical map — MANDATORY per the workflow above)
 This table is the binding map from "what I'm doing" → "which skill governs it". Per the Mandatory workflow,

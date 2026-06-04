@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const HOME_URL = "/";
-const EXPECTED_HEADING = /cat arena/i;
+const EXPECTED_HEADING = /which cat is better/i;
 
 test.describe("Home page", () => {
   test.beforeEach(async ({ page }) => {

@@ -7,6 +7,8 @@ const VALID_RAW = {
   DIRECT_URL: "postgresql://u:p@host/db",
   AUTH_SECRET: "super-secret-value-1234567890",
   AUTH_URL: "https://cat-arena.example.com",
+  AUTH_GOOGLE_ID: "google-client-id",
+  AUTH_GOOGLE_SECRET: "google-client-secret",
   RESEND_API_KEY: "re_test_key",
   EMAIL_FROM: "cats@cat-arena.example.com",
   R2_ACCOUNT_ID: "acct_123",
@@ -39,5 +41,24 @@ describe("envSchema", () => {
   it("rejects a malformed URL field", () => {
     const result = envSchema.safeParse({ ...VALID_RAW, R2_PUBLIC_URL: "not-a-url" });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects empty R2 API credentials", () => {
+    const result = envSchema.safeParse({
+      ...VALID_RAW,
+      R2_ACCESS_KEY_ID: "",
+      R2_SECRET_ACCESS_KEY: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("requires the Google OAuth credentials", () => {
+    const { AUTH_GOOGLE_ID, ...missing } = VALID_RAW;
+    expect(envSchema.safeParse(missing).success).toBe(false);
+  });
+
+  it("treats the stashed Resend keys as optional", () => {
+    const { RESEND_API_KEY, EMAIL_FROM, ...withoutResend } = VALID_RAW;
+    expect(envSchema.safeParse(withoutResend).success).toBe(true);
   });
 });

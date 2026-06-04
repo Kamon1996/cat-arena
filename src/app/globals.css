@@ -4,120 +4,225 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
+/* =====================================================================
+   WhosMeowing — design tokens · Pop / toy-like
+   Light primary + dark. OKLCH per Tailwind v4. shadcn token names.
+   ===================================================================== */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 1.25rem; /* 20px — chunky & friendly */
+
+  /* surfaces */
+  --background: oklch(0.993 0.004 84); /* #FFFDFB warm white */
+  --foreground: oklch(0.204 0.012 314); /* #19171C ink */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.204 0.012 314);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.204 0.012 314);
+
+  /* brand */
+  --primary: oklch(0.705 0.121 183); /* teal #14B8A6 */
+  --primary-foreground: oklch(0.3 0.06 183);
+  --secondary: oklch(0.726 0.176 53); /* tangerine #FF7A1A */
+  --secondary-foreground: oklch(0.27 0.1 50);
+  --accent: oklch(0.67 0.214 9); /* hot pink #FF4D8D */
+  --accent-foreground: oklch(0.27 0.13 9);
+  --delight: oklch(0.874 0.155 90); /* sunny yellow #FFD23F */
+  --delight-foreground: oklch(0.3 0.06 80);
+
+  /* neutrals */
+  --muted: oklch(0.958 0.006 90); /* #F3F2EE */
+  --muted-foreground: oklch(0.51 0.012 300); /* #6B6B73 */
+
+  /* semantic / status */
+  --success: oklch(0.75 0.183 149); /* #22C55E */
+  --success-foreground: oklch(0.27 0.07 150);
+  --warning: oklch(0.769 0.165 70); /* #F59E0B */
+  --warning-foreground: oklch(0.28 0.055 70);
+  --destructive: oklch(0.645 0.22 26); /* #FF4D4D */
+  --destructive-foreground: oklch(1 0 0);
+
+  /* lines & focus */
+  --border: oklch(0.925 0.006 80); /* #E8E5DF */
+  --border-ink: oklch(0.204 0.012 314); /* #19171C — the sticker outline */
+  --input: oklch(0.925 0.006 80);
+  --ring: oklch(0.705 0.121 183);
+
+  /* charts */
+  --chart-1: oklch(0.705 0.121 183);
+  --chart-2: oklch(0.726 0.176 53);
+  --chart-3: oklch(0.67 0.214 9);
+  --chart-4: oklch(0.874 0.155 90);
+  --chart-5: oklch(0.75 0.183 149);
+
+  /* sidebar (admin) */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.204 0.012 314);
+  --sidebar-primary: oklch(0.705 0.121 183);
+  --sidebar-primary-foreground: oklch(0.3 0.06 183);
+  --sidebar-accent: oklch(0.958 0.006 90);
+  --sidebar-accent-foreground: oklch(0.204 0.012 314);
+  --sidebar-border: oklch(0.925 0.006 80);
+  --sidebar-ring: oklch(0.705 0.121 183);
+
+  /* elevation — sticker shadows track --border-ink, so they adapt per theme */
+  --shadow-sticker: 4px 4px 0 var(--border-ink);
+  --shadow-sticker-lg: 6px 6px 0 var(--border-ink);
+  --shadow-sticker-press: 2px 2px 0 var(--border-ink);
+  --shadow-soft: 0 8px 24px -6px oklch(0.204 0.012 314 / 18%);
+  --shadow-soft-sm: 0 4px 12px -4px oklch(0.204 0.012 314 / 16%);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* surfaces */
+  --background: oklch(0.18 0.01 310); /* #17151A */
+  --foreground: oklch(0.975 0.006 70); /* #FCF8F4 */
+  --card: oklch(0.235 0.012 312); /* #211E25 */
+  --card-foreground: oklch(0.975 0.006 70);
+  --popover: oklch(0.235 0.012 312);
+  --popover-foreground: oklch(0.975 0.006 70);
+
+  /* brand */
+  --primary: oklch(0.785 0.13 182); /* #2DD4BF */
+  --primary-foreground: oklch(0.27 0.07 183);
+  --secondary: oklch(0.76 0.165 56); /* #FF8A33 */
+  --secondary-foreground: oklch(0.22 0.1 50);
+  --accent: oklch(0.695 0.195 9); /* #FF5C97 */
+  --accent-foreground: oklch(0.25 0.13 9);
+  --delight: oklch(0.893 0.145 92); /* #FFDA5C */
+  --delight-foreground: oklch(0.26 0.05 80);
+
+  /* neutrals */
+  --muted: oklch(0.27 0.012 312); /* #2A272F */
+  --muted-foreground: oklch(0.72 0.012 305); /* #A8A3AC */
+
+  /* semantic / status */
+  --success: oklch(0.79 0.17 152); /* #34D27B */
+  --success-foreground: oklch(0.24 0.06 150);
+  --warning: oklch(0.82 0.155 78); /* #FBB933 */
+  --warning-foreground: oklch(0.24 0.05 75);
+  --destructive: oklch(0.68 0.205 26); /* #FF5C5C */
+  --destructive-foreground: oklch(0.21 0.07 25);
+
+  /* lines & focus */
+  --border: oklch(0.31 0.012 312); /* #322E37 */
+  --border-ink: oklch(0.1 0.006 312); /* #050406 */
+  --input: oklch(0.31 0.012 312);
+  --ring: oklch(0.785 0.13 182);
+
+  /* sidebar (admin); charts inherit the :root values */
+  --sidebar: oklch(0.235 0.012 312);
+  --sidebar-foreground: oklch(0.975 0.006 70);
+  --sidebar-primary: oklch(0.785 0.13 182);
+  --sidebar-primary-foreground: oklch(0.27 0.07 183);
+  --sidebar-accent: oklch(0.27 0.012 312);
+  --sidebar-accent-foreground: oklch(0.975 0.006 70);
+  --sidebar-border: oklch(0.31 0.012 312);
+  --sidebar-ring: oklch(0.785 0.13 182);
+
+  /* elevation overrides */
+  --shadow-soft: 0 10px 28px -6px oklch(0 0 0 / 55%);
+  --shadow-soft-sm: 0 4px 14px -4px oklch(0 0 0 / 50%);
+}
+
+@theme inline {
+  /* fonts */
+  --font-display: var(--font-clash-display);
+  --font-sans: var(--font-general-sans);
+  --font-mono: ui-monospace, "SF Mono", "Menlo", monospace;
+
+  /* color tokens → bg-* / text-* / border-* utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-delight: var(--delight);
+  --color-delight-foreground: var(--delight-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: var(--border-ink);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* radius scale — chunky: 10 / 14 / 20 / 28 / 36 */
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2.25rem;
+
+  /* spring easing for the bouncy sticker motion */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* loading shimmer (skeletons) */
+  --animate-shimmer: wm-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes wm-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Elevation utilities (v4 @utility). They reference the theme-adaptive vars
+   above, so dark mode + .dark swaps come for free, with no self-reference. */
+@utility shadow-sticker {
+  box-shadow: var(--shadow-sticker);
+}
+
+@utility shadow-sticker-lg {
+  box-shadow: var(--shadow-sticker-lg);
+}
+
+@utility shadow-sticker-press {
+  box-shadow: var(--shadow-sticker-press);
+}
+
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+@utility shadow-soft-sm {
+  box-shadow: var(--shadow-soft-sm);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
   }
 }
