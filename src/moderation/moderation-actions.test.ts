@@ -5,6 +5,7 @@ const {
   approveImage,
   rejectImage,
   approveCatImages,
+  rejectCatImages,
   hideCat,
   banCat,
   deleteCat,
@@ -13,6 +14,7 @@ const {
   approveImage: vi.fn(),
   rejectImage: vi.fn(),
   approveCatImages: vi.fn(),
+  rejectCatImages: vi.fn(),
   hideCat: vi.fn(),
   banCat: vi.fn(),
   deleteCat: vi.fn(),
@@ -23,6 +25,7 @@ vi.mock("@/moderation/admin-actions", () => ({
   approveImage,
   rejectImage,
   approveCatImages,
+  rejectCatImages,
   hideCat,
   banCat,
   deleteCat,
@@ -34,6 +37,7 @@ import {
   banCatAction,
   deleteCatAction,
   hideCatAction,
+  rejectCatImagesAction,
   rejectImageAction,
 } from "./moderation-actions";
 
@@ -67,5 +71,31 @@ describe("moderation-actions", () => {
     approveImage.mockRejectedValueOnce(new Error("db"));
     const res = await approveImageAction("img_x");
     expect(res).toEqual({ ok: false, error: "failed" });
+  });
+
+  describe("rejectCatImagesAction", () => {
+    it("validates + de-dupes reasons, guards, then rejects the cat's images", async () => {
+      const res = await rejectCatImagesAction("cat_1", [
+        "Not a cat",
+        "Not a cat",
+        "Blurry / low-res",
+      ]);
+      expect(requireModeratorMock).toHaveBeenCalledOnce();
+      expect(rejectCatImages).toHaveBeenCalledWith("cat_1", ["Not a cat", "Blurry / low-res"]);
+      expect(res).toEqual({ ok: true });
+    });
+
+    it("rejects an empty reason list before any auth or mutation", async () => {
+      const res = await rejectCatImagesAction("cat_1", []);
+      expect(res).toEqual({ ok: false, error: "Select at least one reason" });
+      expect(requireModeratorMock).not.toHaveBeenCalled();
+      expect(rejectCatImages).not.toHaveBeenCalled();
+    });
+
+    it("rejects reasons outside the allowed set", async () => {
+      const res = await rejectCatImagesAction("cat_1", ["totally made up reason"]);
+      expect(res).toEqual({ ok: false, error: "Select at least one reason" });
+      expect(rejectCatImages).not.toHaveBeenCalled();
+    });
   });
 });

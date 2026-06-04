@@ -120,7 +120,7 @@ export function ModerationReviewCard({
                 key={image.url ?? image.filename ?? i}
                 type="button"
                 aria-label={`Photo ${i + 1}`}
-                aria-current={i === activeImage}
+                aria-current={i === activeImage ? "true" : undefined}
                 onClick={() => setActiveImage(i)}
                 className={cn(
                   "h-2 rounded-full transition-all",

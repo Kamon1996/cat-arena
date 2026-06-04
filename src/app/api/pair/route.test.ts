@@ -15,10 +15,16 @@ vi.mock("@/lib/r2", () => ({
 }));
 
 const cookieStore = new Map<string, string>();
+const cookieOptions = new Map<string, Record<string, unknown>>();
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (n: string) => (cookieStore.has(n) ? { name: n, value: cookieStore.get(n) } : undefined),
-    set: (n: string, v: string) => cookieStore.set(n, v),
+    set: (n: string, v: string, opts?: Record<string, unknown>) => {
+      cookieStore.set(n, v);
+      if (opts) {
+        cookieOptions.set(n, opts);
+      }
+    },
   }),
 }));
 
@@ -38,6 +44,7 @@ describe("GET /api/pair", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cookieStore.clear();
+    cookieOptions.clear();
   });
 
   it("returns 400 for an invalid scope type", async () => {
@@ -84,6 +91,13 @@ describe("GET /api/pair", () => {
     }));
     await GET(req("http://t/api/pair?scope=global"));
     expect(decodeSeen(cookieStore.get(SEEN_COOKIE))).toEqual(["ca", "cb"]);
+    // hardened against accidental client-readable / cross-site cookies
+    expect(cookieOptions.get(SEEN_COOKIE)).toMatchObject({
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+    });
   });
 
   it("merges the new pair ahead of previously-seen ids", async () => {
