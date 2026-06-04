@@ -17,10 +17,16 @@ export async function sendMagicLink({
   identifier,
   url,
 }: SendVerificationRequestParams): Promise<void> {
+  // EMAIL_FROM is optional in env while magic-link is stashed; required to actually send.
+  const from = env.EMAIL_FROM;
+  if (!from) {
+    throw new Error("EMAIL_FROM is required to send the magic-link email");
+  }
+
   const html = await renderMagicLinkEmail(url);
 
   const { error } = await resend.emails.send({
-    from: env.EMAIL_FROM,
+    from,
     to: identifier,
     subject: AUTH.EMAIL_SUBJECT,
     html,
