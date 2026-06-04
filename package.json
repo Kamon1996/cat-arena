@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "prepare": "lefthook install",
+    "prepare": "lefthook install || true",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "biome check .",
