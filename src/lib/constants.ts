@@ -96,3 +96,31 @@ export const ORG_DESCRIPTION_MAX = 280;
 // ── Cat toasts (branded Sonner cards) ───────────────────────────
 export const CAT_TOAST_DURATION_MS = 4500; // default auto-dismiss; 0 = sticky
 export const CAT_TOAST_CONFETTI_COUNT = 28; // lighter burst than the duel celebration
+
+// ── Site identity / SEO ──────────────────────────────────────────
+// Canonical origin (no trailing slash); env-overridable for previews/prod.
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://whosmeowing.app";
+export const SITE_NAME = "WhosMeowing";
+export const SITE_LOCALE = "en_US";
+export const SITE_DESCRIPTION =
+  "Vote in 1-vs-1 cat photo duels and watch the cutest cats climb the Glicko-2 leaderboard.";
+
+// Open Graph image canvas (next/og ImageResponse).
+export const OG_SIZE = { width: 1200, height: 630 } as const;
+
+// ISR: how often cat/leaderboard pages and the sitemap revalidate.
+export const ISR_REVALIDATE_SECONDS = 60 * 60; // 1 hour
+
+// Leaderboard / cat-page list sizes.
+export const TOP_LEADERBOARD_LIMIT = 100;
+export const RECENT_DUELS_LIMIT = 10;
+
+// (ORG_MIN_INDEXABLE_MEMBERS is defined above by phase 07 — reused by the sitemap.)
+
+// ── Analytics: PostHog vote-funnel event names (category:object_action) ──
+export const ANALYTICS_EVENT = {
+  PAIR_SERVED: "duel:pair_served",
+  VOTE_CAST: "duel:vote_cast",
+  SKIP: "duel:skip",
+} as const;
