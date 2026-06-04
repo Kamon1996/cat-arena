@@ -17,13 +17,14 @@ export async function getModerationCats(cursor?: string): Promise<ModerationPage
       id: true,
       name: true,
       status: true,
+      createdAt: true,
       owner: {
         select: { id: true, name: true, email: true, role: true, banned: true },
       },
       images: {
         where: { status: "PENDING" },
         orderBy: { position: "asc" },
-        select: { id: true },
+        select: { id: true, width: true, height: true },
       },
     },
   });
@@ -37,8 +38,14 @@ export async function getModerationCats(cursor?: string): Promise<ModerationPage
       id: cat.id,
       name: cat.name,
       status: cat.status,
+      createdAt: cat.createdAt.toISOString(),
       owner: cat.owner,
-      images: cat.images.map((img) => ({ id: img.id, thumbUrl: thumbUrl(img.id) })),
+      images: cat.images.map((img) => ({
+        id: img.id,
+        thumbUrl: thumbUrl(img.id),
+        width: img.width,
+        height: img.height,
+      })),
     })),
     nextCursor,
   };

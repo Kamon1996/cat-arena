@@ -9,6 +9,7 @@ const initial: ModerationPage = {
       id: "cat_1",
       name: "Mittens the Magnificent",
       status: "PENDING",
+      createdAt: "2026-06-04T12:00:00.000Z",
       owner: {
         id: "user_1",
         name: "Ada Lovelace",
@@ -25,6 +26,7 @@ const initial: ModerationPage = {
       id: "cat_2",
       name: "Sir Fluff",
       status: "PENDING",
+      createdAt: "2026-06-04T12:00:00.000Z",
       owner: {
         id: "user_2",
         name: null,

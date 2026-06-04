@@ -8,19 +8,21 @@ const tx = {
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
-    catImage: { update: vi.fn() },
+    catImage: { update: vi.fn(), updateMany: vi.fn() },
     cat: { update: vi.fn(), delete: vi.fn() },
     user: { update: vi.fn() },
   },
 }));
 
 import { prisma } from "@/lib/prisma";
+import type { RejectionReason } from "@/moderation/moderation-types";
 import {
   approveCatImages,
   approveImage,
   banCat,
   deleteCat,
   hideCat,
+  rejectCatImages,
   rejectImage,
 } from "./admin-actions";
 
@@ -58,7 +60,16 @@ describe("admin-actions", () => {
     await rejectImage(IMAGE_ID);
     expect(prisma.catImage.update).toHaveBeenCalledWith({
       where: { id: IMAGE_ID },
-      data: { status: "REJECTED" },
+      data: { status: "REJECTED", rejectionReasons: { set: [] } },
+    });
+  });
+
+  it("rejectCatImages rejects all pending images with the given reasons", async () => {
+    const reasons: RejectionReason[] = ["Not a cat", "Blurry / low-res"];
+    await rejectCatImages(CAT_ID, reasons);
+    expect(prisma.catImage.updateMany).toHaveBeenCalledWith({
+      where: { catId: CAT_ID, status: "PENDING" },
+      data: { status: "REJECTED", rejectionReasons: { set: reasons } },
     });
   });
 

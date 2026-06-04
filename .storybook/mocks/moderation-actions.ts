@@ -4,6 +4,9 @@ import { fn } from "storybook/test";
 export const approveImageAction = fn(async () => ({ ok: true })).mockName("approveImageAction");
 export const rejectImageAction = fn(async () => ({ ok: true })).mockName("rejectImageAction");
 export const approveAllAction = fn(async () => ({ ok: true })).mockName("approveAllAction");
+export const rejectCatImagesAction = fn(async () => ({ ok: true })).mockName(
+  "rejectCatImagesAction",
+);
 export const hideCatAction = fn(async () => ({ ok: true })).mockName("hideCatAction");
 export const banCatAction = fn(async () => ({ ok: true })).mockName("banCatAction");
 export const deleteCatAction = fn(async () => ({ ok: true })).mockName("deleteCatAction");

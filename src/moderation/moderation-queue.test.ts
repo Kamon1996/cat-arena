@@ -16,8 +16,9 @@ function makeCat(id: string) {
     id,
     name: `Cat ${id}`,
     status: "PENDING",
+    createdAt: new Date("2026-06-04T12:00:00.000Z"),
     owner: { id: "u1", name: null, email: "u@x.z", role: "USER", banned: false },
-    images: [{ id: `${id}-img` }],
+    images: [{ id: `${id}-img`, width: 1080, height: 1080 }],
   };
 }
 

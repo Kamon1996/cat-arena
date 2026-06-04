@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { RejectionReason } from "@/moderation/moderation-types";
 
 /** Approve one image; promote its cat to ACTIVE unless the cat is BANNED. */
 export async function approveImage(imageId: string): Promise<void> {
@@ -21,10 +22,18 @@ export async function approveImage(imageId: string): Promise<void> {
   });
 }
 
-export async function rejectImage(imageId: string): Promise<void> {
+export async function rejectImage(imageId: string, reasons: RejectionReason[] = []): Promise<void> {
   await prisma.catImage.update({
     where: { id: imageId },
-    data: { status: "REJECTED" },
+    data: { status: "REJECTED", rejectionReasons: { set: reasons } },
+  });
+}
+
+/** Reject ALL pending images of a cat, recording the moderator's reasons. */
+export async function rejectCatImages(catId: string, reasons: RejectionReason[]): Promise<void> {
+  await prisma.catImage.updateMany({
+    where: { catId, status: "PENDING" },
+    data: { status: "REJECTED", rejectionReasons: { set: reasons } },
   });
 }
 

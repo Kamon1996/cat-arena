@@ -38,15 +38,16 @@ model Cat {
 }
 
 model CatImage {
-  id        String      @id @default(cuid())
-  catId     String
-  cat       Cat         @relation(fields: [catId], references: [id], onDelete: Cascade)
-  r2Key     String // original; thumb/card derived by key convention
-  width     Int
-  height    Int
-  position  Int         @default(0) // carousel order
-  status    ImageStatus @default(PENDING) // moderation / NSFW at image level
-  createdAt DateTime    @default(now())
+  id               String      @id @default(cuid())
+  catId            String
+  cat              Cat         @relation(fields: [catId], references: [id], onDelete: Cascade)
+  r2Key            String // original; thumb/card derived by key convention
+  width            Int
+  height           Int
+  position         Int         @default(0) // carousel order
+  status           ImageStatus @default(PENDING) // moderation / NSFW at image level
+  rejectionReasons String[]    @default([]) // moderator-selected reasons, set on REJECT
+  createdAt        DateTime    @default(now())
 
   @@index([catId, position])
 }
