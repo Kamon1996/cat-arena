@@ -22,7 +22,11 @@ export const metadata: Metadata = {
     url: absoluteUrl("/top"),
     type: "website",
   },
-  twitter: { card: "summary_large_image", title: `Top Cats | ${SITE_NAME}` },
+  twitter: {
+    card: "summary_large_image",
+    title: `Top Cats | ${SITE_NAME}`,
+    description: TOP_DESCRIPTION,
+  },
 };
 
 export default async function TopPage() {

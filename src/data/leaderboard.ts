@@ -41,10 +41,19 @@ export async function getLeaderboard(limit = TOP_LEADERBOARD_LIMIT): Promise<Lea
     },
   });
 
+  // Standard competition ranking ("1,2,2,4"): tied scores share a rank. Computed
+  // in-memory over the already-sorted rows so it matches getCatPage's
+  // count(score > mine)+1 — no extra queries, consistent rank across /top and /cat.
+  let rank = 0;
+  let prevScore = Number.POSITIVE_INFINITY;
   return cats.map((cat, index) => {
+    if (cat.score < prevScore) {
+      rank = index + RANK_OFFSET;
+      prevScore = cat.score;
+    }
     const cover = cat.images[0];
     return {
-      rank: index + RANK_OFFSET,
+      rank,
       id: cat.id,
       name: cat.name,
       slug: cat.slug,
