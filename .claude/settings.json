@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Read(//Users/dmitrykalganov/Downloads/**)",
+      "WebFetch(domain:www.sarasoueidan.com)"
+    ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  }
+}

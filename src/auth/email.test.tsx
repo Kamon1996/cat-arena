@@ -8,7 +8,7 @@ describe("renderMagicLinkEmail", () => {
   it("renders HTML containing the sign-in URL", async () => {
     const html = await renderMagicLinkEmail(SIGN_IN_URL);
     expect(html).toContain(SIGN_IN_URL);
-    expect(html).toContain("Sign in to Cat Arena");
+    expect(html).toContain("Sign in to WhosMeowing");
   });
 
   it("returns a non-empty HTML string", async () => {

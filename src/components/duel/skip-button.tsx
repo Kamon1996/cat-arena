@@ -1,6 +1,6 @@
 "use client";
 
-import { SkipForward } from "lucide-react";
+import { Shuffle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -14,12 +14,13 @@ export function SkipButton({ onSkip, disabled }: SkipButtonProps) {
     <Button
       type="button"
       variant="ghost"
-      aria-label="Skip this pair"
+      aria-label="Skip and show a new pair"
       onClick={onSkip}
       disabled={disabled}
+      className="text-muted-foreground"
     >
-      <SkipForward aria-hidden />
-      Skip
+      <Shuffle aria-hidden />
+      Skip — show me a new pair
     </Button>
   );
 }

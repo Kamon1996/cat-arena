@@ -19,7 +19,7 @@ const meta = {
   component: CatCard,
   tags: ["autodocs"],
   parameters: { layout: "centered" },
-  args: { cat: mockCat, onPick: fn(), disabled: false },
+  args: { cat: mockCat, side: "a", state: "idle", onPick: fn(), disabled: false },
 } satisfies Meta<typeof CatCard>;
 
 export default meta;
@@ -27,6 +27,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const SecondSide: Story = {
+  args: { side: "b" },
+};
+
+export const Winner: Story = {
+  args: { state: "win" },
+};
+
+export const Loser: Story = {
+  args: { state: "lose" },
+};
 
 export const Disabled: Story = {
   args: { disabled: true },

@@ -1,5 +1,5 @@
 {
-  "name": "cat-arena",
+  "name": "whosmeowing",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -41,6 +41,7 @@
     "@upstash/redis": "^1.38.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
     "next": "15.5.19",

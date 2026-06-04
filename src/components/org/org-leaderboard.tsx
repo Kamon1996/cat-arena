@@ -1,13 +1,4 @@
-import Link from "next/link";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Leaderboard, type LeaderboardEntry } from "@/components/ui/leaderboard";
 
 const FIRST_RANK = 1;
 
@@ -29,36 +20,26 @@ export function OrgLeaderboard({ rows }: OrgLeaderboardProps) {
     return <p className="text-muted-foreground text-sm">No cats yet in this organization.</p>;
   }
 
+  const entries: LeaderboardEntry[] = rows.map((row, index) => ({
+    id: row.catId,
+    rank: index + FIRST_RANK,
+    name: row.name,
+    href: `/cat/${row.slug}`,
+    stats: [
+      <span key="score" className="font-display font-bold text-lg tabular-nums">
+        {Math.round(row.score)}
+      </span>,
+      <span key="wl" className="text-muted-foreground tabular-nums">
+        {row.wins}/{row.losses}
+      </span>,
+    ],
+  }));
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-12">#</TableHead>
-          <TableHead>Cat</TableHead>
-          <TableHead className="text-right">Score</TableHead>
-          <TableHead className="text-right">W/L</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row, index) => (
-          <TableRow key={row.catId}>
-            <TableCell className="text-muted-foreground tabular-nums">
-              {index + FIRST_RANK}
-            </TableCell>
-            <TableCell>
-              <Link href={`/cat/${row.slug}`} className="font-medium hover:underline">
-                {row.name}
-              </Link>
-            </TableCell>
-            <TableCell className="text-right font-medium tabular-nums">
-              {Math.round(row.score)}
-            </TableCell>
-            <TableCell className="text-right text-muted-foreground tabular-nums">
-              {row.wins}/{row.losses}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <Leaderboard
+      label="Organization leaderboard"
+      statHeaders={["Score", "W/L"]}
+      entries={entries}
+    />
   );
 }

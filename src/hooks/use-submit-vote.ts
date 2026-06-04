@@ -1,9 +1,8 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import type { VoteRequest, VoteResponse } from "@/lib/api-types";
-import { PAIR_QUERY_KEY } from "./use-next-pair";
 
 async function submitVote(body: VoteRequest): Promise<VoteResponse> {
   const res = await fetch("/api/vote", {
@@ -17,10 +16,11 @@ async function submitVote(body: VoteRequest): Promise<VoteResponse> {
   return (await res.json()) as VoteResponse;
 }
 
+/**
+ * Records a vote. The pair query is intentionally NOT invalidated here — the
+ * duel UI drives the transition to the next pair after its win/lose
+ * celebration finishes (see DuelArena), so timing stays under its control.
+ */
 export function useSubmitVote() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: submitVote,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: PAIR_QUERY_KEY }),
-  });
+  return useMutation({ mutationFn: submitVote });
 }

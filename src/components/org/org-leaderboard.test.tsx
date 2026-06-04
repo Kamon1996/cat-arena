@@ -9,14 +9,15 @@ const ROWS = [
 ];
 
 describe("OrgLeaderboard", () => {
-  it("renders one row per member with rank, name, and score in order", () => {
+  it("renders one item per member with name, score and a link, in order", () => {
     render(<OrgLeaderboard rows={ROWS} />);
-    const dataRows = screen.getAllByRole("row").slice(1); // skip header row
-    expect(dataRows).toHaveLength(2);
-    const [firstRow, secondRow] = dataRows as [HTMLElement, HTMLElement];
-    expect(within(firstRow).getByText("Top Cat")).toBeInTheDocument();
-    expect(within(firstRow).getByText("1200")).toBeInTheDocument();
-    expect(within(secondRow).getByText("Mid Cat")).toBeInTheDocument();
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    const [firstItem, secondItem] = items as [HTMLElement, HTMLElement];
+    expect(within(firstItem).getByText("Top Cat")).toBeInTheDocument();
+    expect(within(firstItem).getByText("1200")).toBeInTheDocument();
+    expect(within(firstItem).getByRole("link")).toHaveAttribute("href", "/cat/top-cat-1");
+    expect(within(secondItem).getByText("Mid Cat")).toBeInTheDocument();
   });
 
   it("shows an empty state when there are no members", () => {

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { catToast } from "@/components/ui/cat-toast";
 import { Input } from "@/components/ui/input";
 import { ImageDropzone } from "@/components/upload/image-dropzone";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
@@ -69,6 +70,12 @@ export function UploadForm() {
         throw new Error("Could not create cat");
       }
       const { slug } = (await res.json()) as { slug: string };
+      // Fires here but renders on the destination page — the Toaster lives in
+      // the root layout, so the toast survives the client navigation below.
+      catToast.success("Your cat's in the arena!", {
+        variant: "mascot",
+        message: "We'll review the photos, then the duels begin.",
+      });
       router.push(`/cat/${slug}`);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Something went wrong");

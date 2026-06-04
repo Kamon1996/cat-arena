@@ -10,7 +10,8 @@
       "!**/playwright-report",
       "!**/test-results",
       "!**/.claude/worktrees",
-      "!**/storybook-static"
+      "!**/storybook-static",
+      "!**/*-standalone-.html"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

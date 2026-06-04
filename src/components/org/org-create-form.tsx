@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ORG_DESCRIPTION_MAX, ORG_NAME_MAX, ORG_NAME_MIN } from "@/lib/constants";
 import type { CreateOrgResponse } from "@/lib/org-api-types";
 
@@ -25,9 +26,6 @@ const orgFormSchema = z.object({
 });
 
 type OrgFormValues = z.infer<typeof orgFormSchema>;
-
-const TEXTAREA_CLASS =
-  "flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30";
 
 export function OrgCreateForm() {
   const router = useRouter();
@@ -84,10 +82,9 @@ export function OrgCreateForm() {
         <label htmlFor="org-description" className="font-medium text-sm">
           Description <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
-        <textarea
+        <Textarea
           id="org-description"
           rows={3}
-          className={TEXTAREA_CLASS}
           aria-invalid={errors.description ? true : undefined}
           {...register("description")}
         />

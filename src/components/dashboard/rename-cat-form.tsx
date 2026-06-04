@@ -3,10 +3,10 @@
 import { Check, Pencil, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { renameCat } from "@/cats/owner-actions";
 import { Button } from "@/components/ui/button";
+import { catToast } from "@/components/ui/cat-toast";
 import { Input } from "@/components/ui/input";
 
 type RenameCatFormProps = {
@@ -33,11 +33,11 @@ export function RenameCatForm({ catId, currentName, disabled }: RenameCatFormPro
     const result = await renameCat(catId, name);
     setSaving(false);
     if (result.ok) {
-      toast.success("Name updated");
+      catToast.success("Name updated");
       setEditing(false);
       router.refresh();
     } else {
-      toast.error(`Could not rename (${result.error})`);
+      catToast.error("Could not rename", { message: result.error });
     }
   }
 

@@ -2,7 +2,6 @@
 
 import { Check, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { banUser, setUserRole } from "@/admin/user-actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
@@ -10,6 +9,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { catToast } from "@/components/ui/cat-toast";
 import {
   Select,
   SelectContent,
@@ -66,10 +66,10 @@ export function ModerationCard({
       if (res.ok) {
         onOk();
       } else {
-        toast.error(`${errPrefix} (${res.error ?? "failed"})`);
+        catToast.error(errPrefix, res.error ? { message: res.error } : undefined);
       }
     } catch {
-      toast.error(`${errPrefix} (failed)`);
+      catToast.error(errPrefix);
     } finally {
       setBusy(false);
     }
@@ -103,7 +103,7 @@ export function ModerationCard({
                 onValueChange={(v) =>
                   void run(
                     setUserRole(cat.owner.id, v),
-                    () => toast.success("Role updated"),
+                    () => catToast.success("Role updated"),
                     "Role change failed",
                   )
                 }

@@ -1,25 +1,15 @@
 import { MotionConfig } from "motion/react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
-
+import { clashDisplay, generalSans } from "./fonts/local-fonts";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: { default: "Cat Arena", template: "%s | Cat Arena" },
+  title: { default: "WhosMeowing", template: "%s | WhosMeowing" },
   description: "Pick the better of two cats in 1-vs-1 duels and watch them climb the leaderboard.",
 };
 
@@ -29,13 +19,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <SiteHeader />
-        <MotionConfig reducedMotion="user">
-          <QueryProvider>{children}</QueryProvider>
-        </MotionConfig>
-        <Toaster />
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${clashDisplay.variable} ${generalSans.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SiteHeader />
+          <MotionConfig reducedMotion="user">
+            <QueryProvider>{children}</QueryProvider>
+          </MotionConfig>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

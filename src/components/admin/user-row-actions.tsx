@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { banUser, setUserRole, unbanUser } from "@/admin/user-actions";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { Button } from "@/components/ui/button";
+import { catToast } from "@/components/ui/cat-toast";
 import {
   Select,
   SelectContent,
@@ -45,10 +45,10 @@ export function UserRowActions({
     const result = await setUserRole(user.id, role);
     setBusy(false);
     if (result.ok) {
-      toast.success("Role updated");
+      catToast.success("Role updated");
       router.refresh();
     } else {
-      toast.error(`Could not change role (${result.error})`);
+      catToast.error("Could not change role", { message: result.error });
     }
   }
 
@@ -57,10 +57,10 @@ export function UserRowActions({
     const result = await banUser(user.id);
     setBusy(false);
     if (result.ok) {
-      toast.success("User banned");
+      catToast.success("User banned");
       router.refresh();
     } else {
-      toast.error(`Action failed (${result.error})`);
+      catToast.error("Action failed", { message: result.error });
     }
   }
 
@@ -69,10 +69,10 @@ export function UserRowActions({
     const result = await unbanUser(user.id);
     setBusy(false);
     if (result.ok) {
-      toast.success("User unbanned");
+      catToast.success("User unbanned");
       router.refresh();
     } else {
-      toast.error(`Action failed (${result.error})`);
+      catToast.error("Action failed", { message: result.error });
     }
   }
 

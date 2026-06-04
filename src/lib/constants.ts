@@ -54,7 +54,7 @@ export const AUTH = {
   SIGN_IN_PATH: "/signin",
   VERIFY_REQUEST_PATH: "/signin?sent=1",
   MAGIC_LINK_MAX_AGE_SECONDS: 15 * 60, // 15 min
-  EMAIL_SUBJECT: "Sign in to Cat Arena",
+  EMAIL_SUBJECT: "Sign in to WhosMeowing",
 } as const;
 
 // ── Upload limits ──────────────────────────────────────────────
@@ -91,3 +91,7 @@ export const ORG_JOIN_CODE_LENGTH = 24;
 export const ORG_NAME_MIN = 2;
 export const ORG_NAME_MAX = 50;
 export const ORG_DESCRIPTION_MAX = 280;
+
+// ── Cat toasts (branded Sonner cards) ───────────────────────────
+export const CAT_TOAST_DURATION_MS = 4500; // default auto-dismiss; 0 = sticky
+export const CAT_TOAST_CONFETTI_COUNT = 28; // lighter burst than the duel celebration

@@ -1,8 +1,15 @@
 "use client";
 
-import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  type RowData,
+  useReactTable,
+} from "@tanstack/react-table";
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -12,6 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
+declare module "@tanstack/react-table" {
+  // Optional per-column alignment, applied to both the header and the cells.
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: "left" | "right";
+  }
+}
 
 type DataTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[];
@@ -19,6 +34,10 @@ type DataTableProps<TData, TValue> = {
   pageIndex: number; // 0-based
   pageCount: number;
   basePath: string;
+  /** Optional title bar (the soft "grouped card" look used in admin). */
+  title?: string | undefined;
+  /** Total entry count shown in the title-bar badge (defaults to current rows). */
+  count?: number | undefined;
 };
 
 export function DataTable<TData, TValue>({
@@ -27,6 +46,8 @@ export function DataTable<TData, TValue>({
   pageIndex,
   pageCount,
   basePath,
+  title,
+  count,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -40,13 +61,25 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+        {title ? (
+          <div className="flex items-center justify-between border-border border-b px-5 py-4">
+            <span className="font-display font-semibold text-lg">{title}</span>
+            <Badge variant="outline">{count ?? data.length} entries</Badge>
+          </div>
+        ) : null}
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
+              <TableRow key={group.id} className="hover:bg-transparent">
                 {group.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      "h-auto bg-[color-mix(in_oklab,var(--muted)_45%,var(--card))] px-5 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider",
+                      header.column.columnDef.meta?.align === "right" && "text-right",
+                    )}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -60,7 +93,13 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        "px-5 py-2.5 text-sm",
+                        cell.column.columnDef.meta?.align === "right" && "text-right",
+                      )}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -70,7 +109,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
+                  className="h-24 px-5 text-center text-muted-foreground"
                 >
                   No results.
                 </TableCell>

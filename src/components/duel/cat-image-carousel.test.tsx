@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { CatImageCarousel } from "@/components/duel/cat-image-carousel";
@@ -14,14 +13,14 @@ describe("CatImageCarousel", () => {
   it("renders a single image with no navigation controls", () => {
     render(<CatImageCarousel name="Alpha" images={oneImage} />);
     expect(screen.getByRole("img", { name: /alpha/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /next image/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /next photo/i })).not.toBeInTheDocument();
   });
 
-  it("advances to the next image when there are multiple", async () => {
-    const user = userEvent.setup();
+  it("renders every slide plus prev/next controls when there are multiple", () => {
     render(<CatImageCarousel name="Alpha" images={twoImages} />);
-    expect(screen.getByRole("img", { name: /alpha/i })).toHaveAttribute("src", "/a.webp");
-    await user.click(screen.getByRole("button", { name: /next image/i }));
-    expect(screen.getByRole("img", { name: /alpha/i })).toHaveAttribute("src", "/b.webp");
+    // Embla mounts all slides at once (it translates the track), so both images render.
+    expect(screen.getAllByRole("img", { name: /alpha/i })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /previous photo/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /next photo/i })).toBeInTheDocument();
   });
 });

@@ -82,7 +82,9 @@ describe("DuelArena", () => {
 
     await user.click(screen.getByRole("button", { name: /pick alpha/i }));
 
-    await waitFor(() => expect(screen.getByText("Charlie")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Charlie")).toBeInTheDocument(), {
+      timeout: 2500,
+    });
     expect(screen.getByText("Delta")).toBeInTheDocument();
   });
 
@@ -91,7 +93,7 @@ describe("DuelArena", () => {
     renderArena();
 
     expect(await screen.findByText("Alpha")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /skip this pair/i }));
+    await user.click(screen.getByRole("button", { name: /skip/i }));
 
     await waitFor(() => expect(screen.getByText("Charlie")).toBeInTheDocument());
   });

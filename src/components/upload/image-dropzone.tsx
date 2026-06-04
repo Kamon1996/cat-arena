@@ -59,9 +59,12 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
         aria-label="Image upload area. Click or drag cat photos to upload."
         data-dragging={dragging}
         className={cn(
-          "flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-input border-dashed px-4 py-8 text-center text-sm transition-colors",
-          canAddMore ? "cursor-pointer hover:bg-accent/50" : "cursor-not-allowed opacity-60",
-          dragging && "border-primary bg-accent",
+          "flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground px-4 py-8 text-center text-sm transition-colors",
+          canAddMore
+            ? "cursor-pointer hover:border-primary hover:bg-[color-mix(in_oklab,var(--primary)_7%,var(--card))] hover:text-primary"
+            : "cursor-not-allowed opacity-60",
+          dragging &&
+            "border-primary bg-[color-mix(in_oklab,var(--primary)_8%,var(--card))] text-primary",
         )}
         onClick={() => {
           if (canAddMore) {
@@ -122,7 +125,7 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
             return (
               <li
                 key={`${file.name}-${file.size}-${file.lastModified}`}
-                className="group relative aspect-square overflow-hidden rounded-md border bg-muted"
+                className="group relative aspect-square overflow-hidden rounded-md border-2 border-ink bg-muted"
               >
                 {preview ? (
                   // biome-ignore lint/performance/noImgElement: local object-URL blob preview, not a remote asset

@@ -9,7 +9,7 @@ function SiteHeaderPreview() {
   return (
     <header className="flex w-full items-center justify-between gap-2 border-b p-4">
       <a href="/" className="font-bold text-xl">
-        Cat Arena
+        WhosMeowing
       </a>
       <nav className="flex items-center gap-4 text-sm">
         <Button variant="link" className="underline">

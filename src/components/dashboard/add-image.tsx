@@ -2,13 +2,13 @@
 
 import { ImagePlus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useRef, useState } from "react";
 
 import { addCatImage } from "@/cats/owner-actions";
-import { Button } from "@/components/ui/button";
-import { ImageDropzone } from "@/components/upload/image-dropzone";
+import { catToast } from "@/components/ui/cat-toast";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
+import { ALLOWED_UPLOAD_TYPES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type AddImageProps = {
   catId: string;
@@ -16,51 +16,70 @@ type AddImageProps = {
   disabled?: boolean;
 };
 
+/** A dashed "Add photo" cell that lives inside the gallery grid. Picking files
+ *  uploads them straight to R2 and registers them (PENDING) on the cat. */
 export function AddImage({ catId, remaining, disabled }: AddImageProps) {
   const router = useRouter();
-  const [files, setFiles] = useState<File[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
   if (remaining <= 0) {
-    return <p className="text-muted-foreground text-sm">Maximum images reached.</p>;
+    return null;
   }
 
-  async function submit(): Promise<void> {
-    if (files.length === 0 || busy) {
+  async function handleFiles(fileList: FileList | null): Promise<void> {
+    if (!fileList || fileList.length === 0 || busy) {
       return;
     }
+    const files = Array.from(fileList).slice(0, remaining);
     setBusy(true);
     try {
-      for (const file of files.slice(0, remaining)) {
+      for (const file of files) {
         const { r2Key } = await uploadToR2(file);
         const result = await addCatImage(catId, r2Key);
         if (!result.ok) {
           throw new Error(result.error);
         }
       }
-      toast.success("Image added — pending review");
-      setFiles([]);
+      catToast.success("Photo added · in review", {
+        variant: "mascot",
+        message: "We'll approve it before it enters the arena.",
+      });
       router.refresh();
     } catch (err) {
-      toast.error(`Could not add image${err instanceof Error ? ` (${err.message})` : ""}`);
+      catToast.error("Could not add photo", {
+        message: err instanceof Error ? err.message : "Please try again.",
+      });
     } finally {
       setBusy(false);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <ImageDropzone files={files} onChange={setFiles} disabled={disabled || busy} />
-      <Button
-        type="button"
-        size="sm"
-        className="self-start"
-        onClick={() => void submit()}
-        disabled={disabled || busy || files.length === 0}
-      >
-        {busy ? <Loader2 className="animate-spin" /> : <ImagePlus />}
-        {busy ? "Uploading…" : "Add image"}
-      </Button>
-    </div>
+    <label
+      className={cn(
+        "flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-muted-foreground bg-muted text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:bg-[color-mix(in_oklab,var(--primary)_8%,var(--muted))] hover:text-primary",
+        (disabled || busy) && "pointer-events-none opacity-60",
+      )}
+    >
+      {busy ? (
+        <Loader2 className="size-5 animate-spin" aria-hidden />
+      ) : (
+        <ImagePlus className="size-5" aria-hidden />
+      )}
+      {busy ? "Uploading…" : "Add photo"}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ALLOWED_UPLOAD_TYPES.join(",")}
+        multiple
+        className="sr-only"
+        disabled={disabled || busy}
+        onChange={(event) => void handleFiles(event.target.files)}
+      />
+    </label>
   );
 }

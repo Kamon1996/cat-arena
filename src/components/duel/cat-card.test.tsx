@@ -15,17 +15,17 @@ describe("CatCard", () => {
   it("shows the cat name and fires onPick when chosen", async () => {
     const user = userEvent.setup();
     const onPick = vi.fn();
-    render(<CatCard cat={cat} onPick={onPick} disabled={false} />);
+    render(<CatCard cat={cat} side="a" state="idle" onPick={onPick} disabled={false} />);
 
     expect(screen.getByText("Alpha")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /pick alpha/i }));
-    expect(onPick).toHaveBeenCalledWith("ca");
+    expect(onPick).toHaveBeenCalledWith("ca", expect.anything());
   });
 
   it("does not fire onPick when disabled", async () => {
     const user = userEvent.setup();
     const onPick = vi.fn();
-    render(<CatCard cat={cat} onPick={onPick} disabled />);
+    render(<CatCard cat={cat} side="a" state="idle" onPick={onPick} disabled />);
     await user.click(screen.getByRole("button", { name: /pick alpha/i }));
     expect(onPick).not.toHaveBeenCalled();
   });

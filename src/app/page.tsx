@@ -1,23 +1,36 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { DuelArena } from "@/components/duel/duel-arena";
 
 export const metadata: Metadata = {
   title: "Vote on cats",
-  description: "Pick the better of two cats in a 1-vs-1 duel and see them climb the leaderboard.",
+  description: "Pick the cuter of two cats in a 1-vs-1 duel and watch them climb the leaderboard.",
 };
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex max-w-4xl flex-col items-center gap-8 px-4 py-10">
-      <h1 className="font-bold text-2xl">Which cat is better?</h1>
-      <DuelArena scope="global" />
-      <nav aria-label="Site sections">
-        <Link href="/top" className="underline">
-          See the top cats leaderboard
-        </Link>
-      </nav>
+    <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 opacity-50"
+        style={{
+          backgroundImage:
+            "radial-gradient(color-mix(in oklab, var(--accent) 26%, transparent) 2px, transparent 2px)",
+          backgroundSize: "30px 30px",
+        }}
+      />
+      <div className="relative z-10 flex w-full flex-col items-center">
+        <h1 className="text-center font-display text-4xl font-bold tracking-tight sm:text-5xl">
+          Who's the <span className="text-accent">better</span> cat?
+        </h1>
+        <p className="mt-2 mb-7 text-center text-muted-foreground">
+          Tap the cuter cat. Every vote is anonymous and instant.
+        </p>
+        <DuelArena scope="global" />
+      </div>
+      <p className="relative z-10 mt-10 text-center text-sm text-muted-foreground">
+        Powered by Glicko-2
+      </p>
     </main>
   );
 }
