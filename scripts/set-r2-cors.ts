@@ -9,12 +9,9 @@ import { PutBucketCorsCommand, S3Client } from "@aws-sdk/client-s3";
  *   dotenv -e .env.local -- npx tsx scripts/set-r2-cors.ts
  */
 
-const ALLOWED_ORIGINS = [
-  "https://cat-arena.vercel.app",
-  "https://*.vercel.app", // preview deployments
-  "http://localhost:3000",
-  "http://localhost:3001",
-];
+// Production domain only — uploads to the bucket are allowed solely from our site.
+// (No localhost / no broad *.vercel.app wildcard.) Add a custom domain here later.
+const ALLOWED_ORIGINS = ["https://cat-arena.vercel.app"];
 const ALLOWED_METHODS = ["GET", "HEAD", "PUT"];
 const MAX_AGE_SECONDS = 3600;
 
