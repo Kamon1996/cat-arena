@@ -49,6 +49,14 @@ export const SEEN_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 export const PAIR_STALE_TIME_MS = 0;
 export const PAIR_GC_TIME_MS = 5 * 60 * 1000;
 
+// App route paths — keep nav/links free of magic strings (signin lives in AUTH below).
+export const ROUTES = {
+  HOME: "/",
+  TOP: "/top",
+  DASHBOARD: "/dashboard",
+  ADMIN: "/admin",
+} as const;
+
 // Auth.js (magic-link) — provider id, route paths, token lifetime, email subject
 export const AUTH = {
   PROVIDER_ID: "resend",

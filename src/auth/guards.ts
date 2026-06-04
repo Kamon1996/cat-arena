@@ -3,6 +3,7 @@ import type { Session } from "next-auth";
 
 import { AUTH } from "@/lib/constants";
 import { auth } from "./config";
+import { isAdmin, isStaff } from "./roles";
 
 /** Require any signed-in user; redirect to /signin otherwise. */
 export async function requireUser(): Promise<Session> {
@@ -19,7 +20,7 @@ export async function requireUser(): Promise<Session> {
 /** Require MODERATOR or ADMIN; redirect home otherwise. */
 export async function requireModerator(): Promise<Session> {
   const session = await requireUser();
-  if (session.user.role !== "MODERATOR" && session.user.role !== "ADMIN") {
+  if (!isStaff(session.user.role)) {
     redirect("/");
   }
   return session;
@@ -28,7 +29,7 @@ export async function requireModerator(): Promise<Session> {
 /** Require ADMIN; redirect home otherwise. */
 export async function requireAdmin(): Promise<Session> {
   const session = await requireUser();
-  if (session.user.role !== "ADMIN") {
+  if (!isAdmin(session.user.role)) {
     redirect("/");
   }
   return session;
