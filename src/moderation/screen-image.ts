@@ -23,7 +23,8 @@ async function runModel(model: string, image: Buffer): Promise<AiLabel[]> {
     body: new Uint8Array(image),
   });
   if (!res.ok) {
-    throw new Error(`Workers AI ${model} failed: ${res.status}`);
+    const body = await res.text().catch(() => "<no body>");
+    throw new Error(`Workers AI ${model} failed: ${res.status} ${res.statusText} — ${body}`);
   }
   const json = (await res.json()) as { result: AiLabel[] };
   return json.result;
