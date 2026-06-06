@@ -11,7 +11,23 @@ import { env } from "@/lib/env";
 // is not a cat → PENDING) plus user reports + manual review.
 const CLASSIFY_MODEL = "@cf/microsoft/resnet-50";
 
+// HTTP 429 (Too Many Requests) or CF error code 3036 ("out of credits") both mean
+// the Workers AI free-tier quota is spent — expected, not a failure. Cloudflare
+// rejects the request for free in that state, so we never spend money: we just
+// fall through to PENDING (manual queue) until the daily quota resets.
+const HTTP_TOO_MANY_REQUESTS = 429;
+const CF_OUT_OF_CREDITS_CODE = 3036;
+
 type AiLabel = { label: string; score: number };
+
+class WorkersAiError extends Error {
+  readonly rateLimited: boolean;
+  constructor(message: string, rateLimited: boolean) {
+    super(message);
+    this.name = "WorkersAiError";
+    this.rateLimited = rateLimited;
+  }
+}
 
 function runUrl(model: string): string {
   return `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/run/${model}`;
@@ -28,7 +44,12 @@ async function runModel(model: string, image: Buffer): Promise<AiLabel[]> {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "<no body>");
-    throw new Error(`Workers AI ${model} failed: ${res.status} ${res.statusText} — ${body}`);
+    const rateLimited =
+      res.status === HTTP_TOO_MANY_REQUESTS || body.includes(`"code":${CF_OUT_OF_CREDITS_CODE}`);
+    throw new WorkersAiError(
+      `Workers AI ${model} failed: ${res.status} ${res.statusText} — ${body}`,
+      rateLimited,
+    );
   }
   const json = (await res.json()) as { result: AiLabel[] };
   return json.result;
@@ -80,9 +101,11 @@ export type ScreenResult = {
 
 /**
  * Auto-screen one image with Cloudflare Workers AI (resnet-50 cat-gate).
- * There is no local model fallback: if Workers AI is unavailable we fail safe to
- * PENDING so the image lands in the manual moderation queue (never auto-approved
- * without a real signal).
+ * There is no local model fallback: if Workers AI is unavailable — including when
+ * the free-tier quota is spent (HTTP 429 / CF code 3036) — we fail safe to PENDING
+ * so the image lands in the manual moderation queue (never auto-approved without a
+ * real signal). Cloudflare rejects over-quota requests for free, so this never
+ * spends money: screening simply pauses until the daily quota resets.
  */
 export async function screenImage(image: Buffer): Promise<ScreenResult> {
   try {
@@ -92,6 +115,11 @@ export async function screenImage(image: Buffer): Promise<ScreenResult> {
     logScreenResult(catConf, labels, status);
     return { status, catConfidence: catConf };
   } catch (err) {
+    if (err instanceof WorkersAiError && err.rateLimited) {
+      // Expected when the free-tier quota is exhausted — not a failure.
+      console.warn("[screen-image] Workers AI quota exhausted → PENDING (manual queue).");
+      return { status: "PENDING", catConfidence: 0 };
+    }
     console.error("[screen-image] Workers AI failed, falling back to PENDING:", err);
     return { status: "PENDING", catConfidence: 0 };
   }

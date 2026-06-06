@@ -59,9 +59,16 @@ describe("screenImage", () => {
     expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
   });
 
-  it("fails safe to PENDING (manual queue) when Workers AI is unavailable", async () => {
+  it("fails safe to PENDING when the free-tier quota is exhausted (HTTP 429)", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429 }));
     // No local fallback model — an unscreened image must never auto-approve.
+    expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
+  });
+
+  it("fails safe to PENDING when Cloudflare reports out-of-credits (code 3036)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ success: false, errors: [{ code: 3036 }] }), { status: 403 }),
+    );
     expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
   });
 });
