@@ -54,6 +54,25 @@ function decide(nsfw: number, catConf: number | null): ImageStatus {
   return "PENDING";
 }
 
+function fmt(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function logScreenResult(nsfw: number, catConf: number, status: ImageStatus): void {
+  const nsfwBar =
+    nsfw >= NSFW_REJECT_THRESHOLD ? "REJECT" : nsfw >= NSFW_PENDING_THRESHOLD ? "PENDING" : "ok";
+  const catBar = catConf >= CAT_MIN_CONFIDENCE ? "APPROVED" : "low";
+
+  console.log(
+    [
+      "[screen-image]",
+      `nsfw=${fmt(nsfw)} (ok<${fmt(NSFW_PENDING_THRESHOLD)} pending<${fmt(NSFW_REJECT_THRESHOLD)} reject) → ${nsfwBar}`,
+      `cat=${fmt(catConf)} (need≥${fmt(CAT_MIN_CONFIDENCE)}) → ${catBar}`,
+      `decision=${status}`,
+    ].join(" | "),
+  );
+}
+
 /**
  * Auto-screen one image with Cloudflare Workers AI (NSFW + classification).
  * There is no local model fallback: if Workers AI is unavailable we fail safe to
@@ -66,8 +85,13 @@ export async function screenImage(image: Buffer): Promise<ImageStatus> {
       runModel(NSFW_MODEL, image),
       runModel(CLASSIFY_MODEL, image),
     ]);
-    return decide(nsfwScore(nsfwLabels), catConfidence(classifyLabels));
-  } catch {
+    const nsfw = nsfwScore(nsfwLabels);
+    const catConf = catConfidence(classifyLabels);
+    const status = decide(nsfw, catConf);
+    logScreenResult(nsfw, catConf, status);
+    return status;
+  } catch (err) {
+    console.error("[screen-image] Workers AI failed, falling back to PENDING:", err);
     return "PENDING";
   }
 }
