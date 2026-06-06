@@ -66,8 +66,12 @@ export async function processImage(imageId: string): Promise<ProcessedImage> {
   await putWebp(thumbKey(imageId), thumb);
   await putWebp(cardKey(imageId), card);
 
-  // sharp output strips metadata by default → EXIF removed in card.
-  const screenBuffer = card;
+  // Workers AI nsfw_image_detection + resnet-50 expect JPEG, not WebP.
+  const screenBuffer = await sharp(original)
+    .rotate()
+    .resize(IMAGE_SIZE.CARD, IMAGE_SIZE.CARD, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer();
 
   return {
     width: meta.width ?? 0,
