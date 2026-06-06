@@ -1,10 +1,14 @@
 import type { Buffer } from "node:buffer";
 import type { ImageStatus } from "@prisma/client";
 
-import { CAT_MIN_CONFIDENCE, NSFW_PENDING_THRESHOLD, NSFW_REJECT_THRESHOLD } from "@/lib/constants";
+import { CAT_MIN_CONFIDENCE } from "@/lib/constants";
 import { env } from "@/lib/env";
 
-const NSFW_MODEL = "@cf/falcons-ai/nsfw_image_detection";
+// Cloudflare retired @cf/falcons-ai/nsfw_image_detection (the run path now 404s
+// with code 7000), so auto-screening is a cat-gate only: resnet-50 reliably
+// separates cats from non-cats (a dog classifies as a breed, not a cat, so it
+// fails the gate → PENDING). NSFW is caught by the same gate (explicit content
+// is not a cat → PENDING) plus user reports + manual review.
 const CLASSIFY_MODEL = "@cf/microsoft/resnet-50";
 
 type AiLabel = { label: string; score: number };
@@ -30,11 +34,6 @@ async function runModel(model: string, image: Buffer): Promise<AiLabel[]> {
   return json.result;
 }
 
-function nsfwScore(labels: AiLabel[]): number {
-  const nsfw = labels.find((l) => l.label.toLowerCase() === "nsfw");
-  return nsfw?.score ?? 0;
-}
-
 const CAT_LABELS = ["cat", "tabby", "tiger cat", "egyptian cat", "kitten"];
 
 function catConfidence(labels: AiLabel[]): number {
@@ -48,10 +47,8 @@ function catConfidence(labels: AiLabel[]): number {
   return best;
 }
 
-function decide(nsfw: number, catConf: number | null): ImageStatus {
-  if (nsfw >= NSFW_REJECT_THRESHOLD) return "REJECTED";
-  if (nsfw >= NSFW_PENDING_THRESHOLD) return "PENDING";
-  if (catConf !== null && catConf >= CAT_MIN_CONFIDENCE) return "APPROVED";
+function decide(catConf: number): ImageStatus {
+  if (catConf >= CAT_MIN_CONFIDENCE) return "APPROVED";
   return "PENDING";
 }
 
@@ -59,40 +56,43 @@ function fmt(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function logScreenResult(nsfw: number, catConf: number, status: ImageStatus): void {
-  const nsfwBar =
-    nsfw >= NSFW_REJECT_THRESHOLD ? "REJECT" : nsfw >= NSFW_PENDING_THRESHOLD ? "PENDING" : "ok";
-  const catBar = catConf >= CAT_MIN_CONFIDENCE ? "APPROVED" : "low";
+function logScreenResult(catConf: number, labels: AiLabel[], status: ImageStatus): void {
+  const top = labels
+    .slice(0, 3)
+    .map((l) => `${l.label}:${fmt(l.score)}`)
+    .join(", ");
 
   console.log(
     [
       "[screen-image]",
-      `nsfw=${fmt(nsfw)} (ok<${fmt(NSFW_PENDING_THRESHOLD)} pending<${fmt(NSFW_REJECT_THRESHOLD)} reject) → ${nsfwBar}`,
-      `cat=${fmt(catConf)} (need≥${fmt(CAT_MIN_CONFIDENCE)}) → ${catBar}`,
+      `cat=${fmt(catConf)} (need≥${fmt(CAT_MIN_CONFIDENCE)} → APPROVED, else PENDING)`,
+      `top3=[${top}]`,
       `decision=${status}`,
     ].join(" | "),
   );
 }
 
+export type ScreenResult = {
+  status: ImageStatus;
+  /** P(is-a-cat) from resnet-50, 0–1. 0 when Workers AI is unavailable. */
+  catConfidence: number;
+};
+
 /**
- * Auto-screen one image with Cloudflare Workers AI (NSFW + classification).
+ * Auto-screen one image with Cloudflare Workers AI (resnet-50 cat-gate).
  * There is no local model fallback: if Workers AI is unavailable we fail safe to
  * PENDING so the image lands in the manual moderation queue (never auto-approved
- * or auto-rejected without a real signal).
+ * without a real signal).
  */
-export async function screenImage(image: Buffer): Promise<ImageStatus> {
+export async function screenImage(image: Buffer): Promise<ScreenResult> {
   try {
-    const [nsfwLabels, classifyLabels] = await Promise.all([
-      runModel(NSFW_MODEL, image),
-      runModel(CLASSIFY_MODEL, image),
-    ]);
-    const nsfw = nsfwScore(nsfwLabels);
-    const catConf = catConfidence(classifyLabels);
-    const status = decide(nsfw, catConf);
-    logScreenResult(nsfw, catConf, status);
-    return status;
+    const labels = await runModel(CLASSIFY_MODEL, image);
+    const catConf = catConfidence(labels);
+    const status = decide(catConf);
+    logScreenResult(catConf, labels, status);
+    return { status, catConfidence: catConf };
   } catch (err) {
     console.error("[screen-image] Workers AI failed, falling back to PENDING:", err);
-    return "PENDING";
+    return { status: "PENDING", catConfidence: 0 };
   }
 }

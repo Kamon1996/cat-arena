@@ -74,9 +74,10 @@ export type AllowedUploadType = (typeof ALLOWED_UPLOAD_TYPES)[number];
 
 // ── Moderation thresholds (configurable defaults; tune on data) ──
 export const REPORT_HIDE_THRESHOLD = 5; // distinct reports → auto-hide cat
-export const NSFW_REJECT_THRESHOLD = 0.85; // P(nsfw) ≥ → REJECTED
-export const NSFW_PENDING_THRESHOLD = 0.5; // P(nsfw) ≥ (but < reject) → PENDING
-export const CAT_MIN_CONFIDENCE = 0.4; // P(is-a-cat) ≥ → eligible for APPROVED
+// Cloudflare retired its NSFW model — auto-screening is a resnet-50 cat-gate only.
+// 0.25: fluffy/odd-angle cats often score 0.25–0.35 (confused with towel/angora);
+// non-cats (incl. NSFW, which classify as clothing) reliably score ~0 → still gated.
+export const CAT_MIN_CONFIDENCE = 0.25; // P(is-a-cat) ≥ → eligible for APPROVED
 
 // ── Image encoding ───────────────────────────────────────────────
 export const WEBP_QUALITY = 82; // sharp .webp({ quality })

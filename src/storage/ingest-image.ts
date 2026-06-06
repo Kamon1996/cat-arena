@@ -7,6 +7,8 @@ export type ScreenedImage = {
   width: number;
   height: number;
   status: ImageStatus;
+  /** P(is-a-cat) from the auto-screen, 0–1. Surfaced to the client for logging. */
+  catConfidence: number;
 };
 
 /**
@@ -16,6 +18,6 @@ export type ScreenedImage = {
  */
 export async function ingestImage(imageId: string): Promise<ScreenedImage> {
   const { width, height, screenBuffer } = await processImage(imageId);
-  const status = await screenImage(screenBuffer);
-  return { width, height, status };
+  const { status, catConfidence } = await screenImage(screenBuffer);
+  return { width, height, status, catConfidence };
 }

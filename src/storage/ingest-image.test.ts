@@ -19,18 +19,18 @@ describe("ingestImage", () => {
       height: 600,
       screenBuffer: Buffer.from([1]),
     });
-    screenMock.mockResolvedValue("APPROVED");
+    screenMock.mockResolvedValue({ status: "APPROVED", catConfidence: 0.9 });
   });
 
-  it("processes then screens, returning dims and status", async () => {
+  it("processes then screens, returning dims, status, and confidence", async () => {
     const result = await ingestImage("img_1");
     expect(processMock).toHaveBeenCalledWith("img_1");
     expect(screenMock).toHaveBeenCalledWith(Buffer.from([1]));
-    expect(result).toEqual({ width: 800, height: 600, status: "APPROVED" });
+    expect(result).toEqual({ width: 800, height: 600, status: "APPROVED", catConfidence: 0.9 });
   });
 
   it("passes through a PENDING screen verdict", async () => {
-    screenMock.mockResolvedValueOnce("PENDING");
+    screenMock.mockResolvedValueOnce({ status: "PENDING", catConfidence: 0.1 });
     const result = await ingestImage("img_2");
     expect(result.status).toBe("PENDING");
   });

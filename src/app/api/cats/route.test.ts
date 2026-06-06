@@ -42,7 +42,7 @@ describe("POST /api/cats", () => {
       height: 600,
       screenBuffer: Buffer.from([1]),
     });
-    screenMock.mockResolvedValue("APPROVED");
+    screenMock.mockResolvedValue({ status: "APPROVED", catConfidence: 0.9 });
     catCount.mockResolvedValue(0);
     catCreate.mockResolvedValue({
       id: "cat_1",
@@ -91,12 +91,13 @@ describe("POST /api/cats", () => {
       id: "cat_1",
       slug: "fluffy-abc123",
       status: "ACTIVE",
+      screens: [{ status: "APPROVED", catConfidence: 0.9 }],
     });
     expect(catUpdate).toHaveBeenCalled();
   });
 
   it("stays PENDING when no image is APPROVED", async () => {
-    screenMock.mockResolvedValue("PENDING");
+    screenMock.mockResolvedValue({ status: "PENDING", catConfidence: 0.1 });
     const res = await POST(req({ name: "Fluffy", images: [{ r2Key: "cats/a/original" }] }));
     const json = await res.json();
     expect(json.status).toBe("PENDING");

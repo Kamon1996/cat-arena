@@ -52,8 +52,8 @@ export async function POST(request: Request): Promise<Response> {
     const processed = await Promise.all(
       images.map(async (img, index) => {
         const id = imageIdFromKey(img.r2Key);
-        const { width, height, status } = await ingestImage(id);
-        return { id, r2Key: img.r2Key, width, height, position: index, status };
+        const { width, height, status, catConfidence } = await ingestImage(id);
+        return { id, r2Key: img.r2Key, width, height, position: index, status, catConfidence };
       }),
     );
 
@@ -88,7 +88,16 @@ export async function POST(request: Request): Promise<Response> {
       status = promoted.status;
     }
 
-    return NextResponse.json({ id: created.id, slug: created.slug, status }, { status: 201 });
+    // Surface per-image auto-screen confidence so the client can log it (no UI, no DB).
+    const screens = processed.map((p) => ({
+      status: p.status,
+      catConfidence: p.catConfidence,
+    }));
+
+    return NextResponse.json(
+      { id: created.id, slug: created.slug, status, screens },
+      { status: 201 },
+    );
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

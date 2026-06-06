@@ -24,53 +24,44 @@ describe("screenImage", () => {
     vi.restoreAllMocks();
   });
 
-  it("APPROVED when not nsfw and confidently a cat", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
-      const u = String(url);
-      if (u.includes("nsfw")) {
-        return Promise.resolve(aiResponse([{ label: "nsfw", score: 0.02 }]));
-      }
-      return Promise.resolve(aiResponse([{ label: "tabby cat", score: 0.9 }]));
-    });
-    expect(await screenImage(BUF)).toBe("APPROVED");
+  it("APPROVED with the confidence score when resnet-50 is confident it is a cat", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      aiResponse([{ label: "tabby cat", score: 0.9 }]),
+    );
+    expect(await screenImage(BUF)).toEqual({ status: "APPROVED", catConfidence: 0.9 });
   });
 
-  it("REJECTED when nsfw score is above the reject threshold", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
-      const u = String(url);
-      if (u.includes("nsfw")) {
-        return Promise.resolve(aiResponse([{ label: "nsfw", score: 0.97 }]));
-      }
-      return Promise.resolve(aiResponse([{ label: "cat", score: 0.9 }]));
-    });
-    expect(await screenImage(BUF)).toBe("REJECTED");
+  it("APPROVED when confidence is at the (lowered) threshold", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      aiResponse([{ label: "tiger cat", score: 0.25 }]),
+    );
+    expect(await screenImage(BUF)).toEqual({ status: "APPROVED", catConfidence: 0.25 });
   });
 
-  it("PENDING when nsfw score is borderline", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
-      const u = String(url);
-      if (u.includes("nsfw")) {
-        return Promise.resolve(aiResponse([{ label: "nsfw", score: 0.6 }]));
-      }
-      return Promise.resolve(aiResponse([{ label: "cat", score: 0.9 }]));
-    });
-    expect(await screenImage(BUF)).toBe("PENDING");
+  it("PENDING when cat confidence is below the threshold", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      aiResponse([{ label: "tiger cat", score: 0.2 }]),
+    );
+    expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0.2 });
   });
 
-  it("PENDING when cat confidence is low (clean but maybe not a cat)", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
-      const u = String(url);
-      if (u.includes("nsfw")) {
-        return Promise.resolve(aiResponse([{ label: "nsfw", score: 0.02 }]));
-      }
-      return Promise.resolve(aiResponse([{ label: "toaster", score: 0.95 }]));
-    });
-    expect(await screenImage(BUF)).toBe("PENDING");
+  it("PENDING with zero confidence when the top label is not a cat (e.g. a dog)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      aiResponse([{ label: "toy poodle", score: 0.95 }]),
+    );
+    expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
+  });
+
+  it("PENDING with zero confidence when the image is not an animal at all", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      aiResponse([{ label: "toaster", score: 0.95 }]),
+    );
+    expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
   });
 
   it("fails safe to PENDING (manual queue) when Workers AI is unavailable", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429 }));
-    // No local fallback model — an unscreened image must never auto-approve/reject.
-    expect(await screenImage(BUF)).toBe("PENDING");
+    // No local fallback model — an unscreened image must never auto-approve.
+    expect(await screenImage(BUF)).toEqual({ status: "PENDING", catConfidence: 0 });
   });
 });

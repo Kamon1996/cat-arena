@@ -69,7 +69,16 @@ export function UploadForm() {
       if (!res.ok) {
         throw new Error("Could not create cat");
       }
-      const { slug } = (await res.json()) as { slug: string };
+      const { slug, screens } = (await res.json()) as {
+        slug: string;
+        screens?: Array<{ status: string; catConfidence: number }>;
+      };
+      // Surface the auto-screen result in the browser console (logs only, no UI).
+      for (const [i, s] of (screens ?? []).entries()) {
+        console.log(
+          `[screen-image] photo ${i + 1}: cat=${(s.catConfidence * 100).toFixed(1)}% → ${s.status}`,
+        );
+      }
       // Fires here but renders on the destination page — the Toaster lives in
       // the root layout, so the toast survives the client navigation below.
       catToast.success("Your cat's in the arena!", {
