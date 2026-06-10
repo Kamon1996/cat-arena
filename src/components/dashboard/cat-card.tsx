@@ -47,7 +47,7 @@ export type CatCardData = {
 
 // Scrapbook paper: fine dot grid over a faint yellow-tinted card.
 const PAPER_CLASS = cn(
-  "bg-[color-mix(in_srgb,var(--delight)_8%,var(--card))]",
+  "bg-[var(--card)]",
   "bg-[image:radial-gradient(color-mix(in_srgb,var(--border-ink)_5%,transparent)_1px,transparent_1.5px)]",
   "bg-[size:16px_16px]",
 );
