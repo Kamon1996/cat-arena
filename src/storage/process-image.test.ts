@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // A real 2x2 PNG so sharp can decode/resize it.
@@ -31,28 +32,27 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { GetObjectCommand, PutObjectCommand, S3Client: class {} };
 });
 
-vi.mock("@/lib/r2", () => ({
-  r2: {
-    send: vi.fn(async (command: { input: Record<string, unknown> }) => {
-      const ctor = command.constructor.name;
-      if (ctor === "GetObjectCommand") {
-        return {
-          Body: {
-            transformToByteArray: async () => new Uint8Array(PNG_2X2),
-          },
-        };
-      }
-      // PutObjectCommand
-      const body = command.input.Body as Buffer;
-      sent.push({
-        Key: command.input.Key as string,
-        ContentType: command.input.ContentType as string,
-        size: body.byteLength,
-      });
-      return {};
-    }),
-  },
-}));
+vi.mock("@/lib/r2", () => {
+  const send = vi.fn(async (command: { input: Record<string, unknown> }) => {
+    const ctor = command.constructor.name;
+    if (ctor === "GetObjectCommand") {
+      return {
+        Body: {
+          transformToByteArray: async () => new Uint8Array(PNG_2X2),
+        },
+      };
+    }
+    // PutObjectCommand
+    const body = command.input.Body as Buffer;
+    sent.push({
+      Key: command.input.Key as string,
+      ContentType: command.input.ContentType as string,
+      size: body.byteLength,
+    });
+    return {};
+  });
+  return { getR2: () => ({ send }) };
+});
 
 import { processImage } from "./process-image";
 
@@ -74,5 +74,10 @@ describe("processImage", () => {
 
     expect(result.width).toBe(2);
     expect(result.height).toBe(2);
+  });
+
+  it("returns the SHA-256 hex of the original bytes as uploaded", async () => {
+    const result = await processImage(IMAGE_ID);
+    expect(result.sha256).toBe(createHash("sha256").update(PNG_2X2).digest("hex"));
   });
 });

@@ -1,0 +1,6 @@
+# Reverse proxy with automatic HTTPS (Let's Encrypt). Caddy obtains and renews
+# the cert for $DOMAIN on its own — just point the domain's A record at the VPS.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

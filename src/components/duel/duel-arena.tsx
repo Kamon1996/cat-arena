@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Mimo } from "@/components/brand/mimo";
 import { CatCard, type DuelCardState } from "@/components/duel/cat-card";
@@ -13,7 +13,7 @@ import { type Celebration, VoteCelebration } from "@/components/duel/vote-celebr
 import { VsBadge } from "@/components/duel/vs-badge";
 import { Button } from "@/components/ui/button";
 import { catToast } from "@/components/ui/cat-toast";
-import { useNextPair } from "@/hooks/use-next-pair";
+import { usePairQueue } from "@/hooks/use-pair-queue";
 import { useSubmitVote } from "@/hooks/use-submit-vote";
 
 const CELEBRATION_MS = 1150;
@@ -24,31 +24,67 @@ type DuelArenaProps = {
 };
 
 export function DuelArena({ scope = "global" }: DuelArenaProps) {
-  const { data, isPending, isError, refetch } = useNextPair(scope);
+  const { current, isPending, isError, advance, retry } = usePairQueue(scope);
   const vote = useSubmitVote();
   const [pendingWinnerId, setPendingWinnerId] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   const celebrationId = useRef(0);
+  const advanceTimerRef = useRef<number | null>(null);
+  const currentTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    currentTokenRef.current = current?.token ?? null;
+  }, [current]);
+
+  // Don't advance after unmount: the celebration timer would otherwise fire
+  // into the dead hook and kick off a pointless background fetch.
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current !== null) {
+        window.clearTimeout(advanceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const clearAdvanceTimer = () => {
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  };
 
   const busy = vote.isPending || pendingWinnerId !== null;
 
   const handlePick = (winnerCatId: string, origin: { x: number; y: number }) => {
-    if (!data || busy) {
+    if (!current || busy) {
       return;
     }
-    const loserCatId = winnerCatId === data.a.id ? data.b.id : data.a.id;
-    const winnerName = winnerCatId === data.a.id ? data.a.name : data.b.name;
+    // AnimatePresence keeps the outgoing pair mounted (frozen props) for its
+    // exit animation — ignore clicks on a card that is no longer the live pair.
+    if (current.token !== currentTokenRef.current) {
+      return;
+    }
+    // The pair token died while the tab sat open; submitting would be a
+    // guaranteed 403 — swap in a fresh pair instead.
+    if (current.expiresAt <= Date.now()) {
+      advance();
+      return;
+    }
+    const loserCatId = winnerCatId === current.a.id ? current.b.id : current.a.id;
+    const winnerName = winnerCatId === current.a.id ? current.a.name : current.b.name;
 
     setPendingWinnerId(winnerCatId);
     celebrationId.current += 1;
     setCelebration({ id: celebrationId.current, x: origin.x, y: origin.y, name: winnerName });
 
     vote.mutate(
-      { token: data.token, winnerCatId, loserCatId },
+      { token: current.token, winnerCatId, loserCatId },
       {
         onError: () => {
-          // The vote didn't land — tear down the optimistic celebration so it
-          // can't play alongside the failure, and surface the error instead.
+          // The vote didn't land — keep the pair on screen so "try again" is
+          // actually possible: cancel the scheduled advance and tear down the
+          // optimistic celebration before surfacing the error.
+          clearAdvanceTimer();
           setPendingWinnerId(null);
           setCelebration(null);
           catToast.error("That vote didn't count", { message: "Give it another try." });
@@ -56,10 +92,11 @@ export function DuelArena({ scope = "global" }: DuelArenaProps) {
       },
     );
 
-    window.setTimeout(() => {
+    advanceTimerRef.current = window.setTimeout(() => {
+      advanceTimerRef.current = null;
       setPendingWinnerId(null);
       setCelebration(null);
-      void refetch();
+      advance(); // the next pair is already in memory — no network wait
     }, CELEBRATION_MS);
   };
 
@@ -67,15 +104,15 @@ export function DuelArena({ scope = "global" }: DuelArenaProps) {
     if (busy) {
       return;
     }
-    void refetch();
+    advance();
   };
 
   if (isPending) {
     return <DuelSkeleton />;
   }
 
-  if (isError || !data) {
-    return <DuelEmpty onRetry={() => void refetch()} />;
+  if (isError || !current) {
+    return <DuelEmpty onRetry={retry} />;
   }
 
   const stateFor = (catId: string): DuelCardState =>
@@ -85,22 +122,26 @@ export function DuelArena({ scope = "global" }: DuelArenaProps) {
     <div className="flex w-full flex-col items-center">
       <AnimatePresence mode="wait">
         <motion.div
-          key={data.token}
-          exit={{ opacity: 0, transition: { duration: EXIT_DURATION_S } }}
+          key={current.token}
+          exit={{
+            opacity: 0,
+            pointerEvents: "none",
+            transition: { duration: EXIT_DURATION_S },
+          }}
           className="flex w-full max-w-220 items-stretch justify-center gap-3 max-sm:flex-col max-sm:items-center sm:gap-6"
         >
           <CatCard
-            cat={data.a}
+            cat={current.a}
             side="a"
-            state={stateFor(data.a.id)}
+            state={stateFor(current.a.id)}
             disabled={busy}
             onPick={handlePick}
           />
           <VsBadge />
           <CatCard
-            cat={data.b}
+            cat={current.b}
             side="b"
-            state={stateFor(data.b.id)}
+            state={stateFor(current.b.id)}
             disabled={busy}
             onPick={handlePick}
           />

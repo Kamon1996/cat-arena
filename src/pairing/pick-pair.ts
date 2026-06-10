@@ -13,6 +13,12 @@ export type PickPairOptions = {
   scope: PairScope;
   seenCatIds: string[];
   voterKey: string;
+  /**
+   * Hard exclusion from BOTH pools (unlike seenCatIds, which only filters B).
+   * Used when generating a batch of pairs: cats reserved by earlier pairs in
+   * the batch must not appear again, so a queue of N pairs has 2N distinct cats.
+   */
+  excludedCatIds?: string[];
 };
 
 export type PickedPair = {
@@ -42,7 +48,11 @@ function eligibilityWhere(scope: PairScope) {
 }
 
 async function pickPair(opts: PickPairOptions): Promise<PickedPair | null> {
-  const where = eligibilityWhere(opts.scope);
+  const excludedCatIds = opts.excludedCatIds ?? [];
+  const where = {
+    ...eligibilityWhere(opts.scope),
+    ...(excludedCatIds.length > 0 ? { id: { notIn: excludedCatIds } } : {}),
+  };
 
   // A-pool: small set with highest rd via the (status, rd) index — never full-table.
   const aPool = (await prisma.cat.findMany({

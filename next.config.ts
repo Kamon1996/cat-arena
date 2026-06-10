@@ -2,6 +2,16 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output: bundles a minimal server + only the needed node_modules into
+  // .next/standalone, so the Docker image (VPS deploy) ships `node server.js` without
+  // the full dependency tree. No-op on Vercel (which has its own build), so it's safe
+  // to leave on for both targets.
+  output: "standalone",
+  // Pin the file-tracing root to this project so standalone always lands flat at
+  // .next/standalone/server.js. Without this, Next can root higher when parent
+  // lockfiles exist, nesting the output (e.g. .next/standalone/<path>/server.js)
+  // and breaking the Dockerfile COPY.
+  outputFileTracingRoot: process.cwd(),
   // sharp ships platform binaries and must NOT be bundled by webpack — keeping it
   // external prevents broken builds. (Image auto-screening is Cloudflare Workers AI
   // over HTTP, so there are no local model deps left to externalize.)

@@ -12,7 +12,13 @@ const CAT_PRIORITY = 0.6;
 const ORG_PRIORITY = 0.5;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [cats, orgs] = await Promise.all([getIndexableCatSlugs(), getIndexableOrgSlugs()]);
+  // Resilient to a build with no DB reachable (self-hosted Docker / CI): fall back
+  // to the static entries only. With a DB present (Vercel/VPS build) the full
+  // sitemap is generated; ISR revalidation fills it in at runtime regardless.
+  const [cats, orgs] = await Promise.all([
+    getIndexableCatSlugs().catch(() => []),
+    getIndexableOrgSlugs().catch(() => []),
+  ]);
 
   const lastModified = new Date();
 

@@ -3,7 +3,23 @@
     "allow": [
       "mcp__plugin_playwright_playwright__browser_console_messages",
       "Read(//Users/dmitrykalganov/Downloads/**)",
-      "WebFetch(domain:www.sarasoueidan.com)"
+      "WebFetch(domain:www.sarasoueidan.com)",
+      "Skill(deep-research)",
+      "Skill(deep-research:*)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:docs.selectel.ru)",
+      "WebFetch(domain:leanopstech.com)",
+      "WebFetch(domain:egresscost.com)",
+      "WebFetch(domain:mixpeek.com)",
+      "WebFetch(domain:infratally.com)",
+      "WebFetch(domain:www.backblaze.com)",
+      "WebFetch(domain:cloud.vk.com)",
+      "WebFetch(domain:selectel.ru)",
+      "WebFetch(domain:apiscout.dev)",
+      "WebFetch(domain:timeweb.cloud)",
+      "WebFetch(domain:www.hetzner.com)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:community.cloudflare.com)"
     ]
   },
   "worktree": {

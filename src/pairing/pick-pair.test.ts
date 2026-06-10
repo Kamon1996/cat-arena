@@ -101,6 +101,35 @@ describe("pickPair (global scope)", () => {
     });
     expect(result?.b.id).toBe("b"); // seen excluded by core
   });
+
+  it("hard-excludes batch-reserved ids from BOTH pools", async () => {
+    findMany
+      .mockResolvedValueOnce([A_ROW] as never)
+      .mockResolvedValueOnce([A_ROW, B_NEAR] as never);
+
+    await pickPair({
+      scope: "global",
+      seenCatIds: [],
+      voterKey: VOTER_KEY,
+      excludedCatIds: ["x1", "x2"],
+    });
+
+    const aArgs = findMany.mock.calls[0]?.[0];
+    const bArgs = findMany.mock.calls[1]?.[0];
+    expect(aArgs?.where?.id).toEqual({ notIn: ["x1", "x2"] });
+    expect(bArgs?.where?.id).toEqual({ notIn: ["x1", "x2"] });
+  });
+
+  it("omits the id filter when there are no exclusions", async () => {
+    findMany
+      .mockResolvedValueOnce([A_ROW] as never)
+      .mockResolvedValueOnce([A_ROW, B_NEAR] as never);
+
+    await pickPair({ scope: "global", seenCatIds: [], voterKey: VOTER_KEY, excludedCatIds: [] });
+
+    const aArgs = findMany.mock.calls[0]?.[0];
+    expect(aArgs?.where?.id).toBeUndefined();
+  });
 });
 
 describe("pickPair (org scope)", () => {

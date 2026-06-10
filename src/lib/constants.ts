@@ -15,6 +15,18 @@ export const GLICKO_DEFAULT = {
 // score = rating - 2 * rd  (denormalized into Cat.score / CatOrg.score)
 export const SCORE = (rating: number, rd: number): number => rating - 2 * rd;
 
+// RD-decay cron: a cat with no votes for this many days is treated as having sat
+// out a Glicko-2 rating period — its rd is inflated (rating unchanged) so it
+// re-enters the "needs data" pairing pool. Cats already at the rd ceiling (350)
+// are skipped, which bounds the work for permanently-inactive cats.
+export const DECAY_INACTIVITY_DAYS = 1;
+export const DECAY_BATCH_LIMIT = 500; // max cats processed per cron run
+
+// Orphan cleanup cron: delete R2 originals with no CatImage row (failed uploads),
+// but only once older than this grace window so in-flight uploads aren't reaped.
+export const ORPHAN_GRACE_HOURS = 24;
+export const ORPHAN_SCAN_LIMIT = 1000; // max R2 keys scanned per cron run
+
 // Image processing sizes (max edge, px) — sharp → WebP
 export const IMAGE_SIZE = {
   THUMB: 200,
@@ -31,11 +43,42 @@ export const PAIR_MIN_POOL = 2; // need ≥2 distinct eligible cats to form a pa
 // Pair token — single-use HMAC token lifetime
 export const PAIR_TOKEN_TTL_SECONDS = 60 * 30; // 30 min pair→vote window; nonce gives single-use
 
+// Duel pair queue — the client prefetches pairs (and their images) so the next
+// duel renders instantly after a vote instead of waiting on the network.
+export const PAIR_QUEUE_TARGET_SIZE = 5; // pairs kept ready on the client
+export const PAIR_QUEUE_MIN_SIZE = 2; // watermark: queue at/below this → top back up to target
+export const PAIR_BATCH_MAX = 5; // server cap on ?count= (5 pairs → ≤10 distinct cats reserved)
+export const PAIR_FETCH_TIMEOUT_MS = 10_000; // abort a hung batch fetch so the queue can recover
+
 // Rate limiting — vote token bucket (per voterKey/IP)
 export const RATE_LIMIT_REFILL_TOKENS = 10; // tokens added per interval
 export const RATE_LIMIT_REFILL_INTERVAL = "10 s" as const; // refill cadence (Duration literal)
 export const RATE_LIMIT_MAX_TOKENS = 20; // bucket capacity (allows a short burst)
 export const RATE_LIMIT_PREFIX = "ratelimit:vote";
+// rate-limiter-flexible (REDIS_DRIVER=redis) has no token-bucket primitive, so we
+// approximate the bucket as MAX_TOKENS points per the window it takes to refill a
+// full bucket: 20 tokens ÷ (10 tokens / 10 s) = 20 s. Same burst + ~1/s sustained.
+export const RATE_LIMIT_WINDOW_SECONDS = 20;
+
+// Rate limiting — upload endpoints (per user id). One minute budget SHARED by
+// /api/upload/sign, POST /api/cats and the cabinet add-photo action (bounds the
+// duplicate-submission loop and the sign-time hash oracle); the daily cap is the
+// doc's "число загрузок в день" and counts signed files only.
+export const UPLOAD_BURST_LIMIT = 10; // upload requests per minute
+export const UPLOAD_BURST_WINDOW = "60 s" as const;
+export const UPLOAD_BURST_WINDOW_SECONDS = 60;
+export const UPLOAD_DAILY_LIMIT = 30; // signed files per day
+export const UPLOAD_DAILY_WINDOW = "1 d" as const;
+export const UPLOAD_DAILY_WINDOW_SECONDS = 60 * 60 * 24;
+export const RATE_LIMIT_UPLOAD_PREFIX = "ratelimit:upload";
+export const RATE_LIMIT_UPLOAD_DAILY_PREFIX = "ratelimit:upload-daily";
+
+// Rate limiting — pair serving (per voterKey). Bounds pair-token farming via
+// ?count= batches; a fast legit voter needs ~10 batch requests per minute.
+export const PAIR_SERVE_LIMIT = 30; // pair batch requests per minute
+export const PAIR_SERVE_WINDOW = "60 s" as const;
+export const PAIR_SERVE_WINDOW_SECONDS = 60;
+export const RATE_LIMIT_PAIR_PREFIX = "ratelimit:pair";
 
 // Anonymous voter identity (cookies)
 export const ANON_ID_COOKIE = "ca_anon";

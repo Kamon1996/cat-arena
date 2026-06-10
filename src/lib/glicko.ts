@@ -38,6 +38,7 @@ async function applyVote(
     { rating: winner.rating, rd: winner.rd, score: LOSS_SCORE },
   ]);
 
+  const ratedAt = new Date();
   const sideSelect = { id: true, rating: true, rd: true, score: true } as const;
   const [updatedWinner, updatedLoser] = await Promise.all([
     tx.cat.update({
@@ -49,6 +50,7 @@ async function applyVote(
         score: SCORE(nextWinner.rating, nextWinner.rd),
         wins: { increment: 1 },
         timesShown: { increment: 1 },
+        lastRatedAt: ratedAt,
       },
       select: sideSelect,
     }),
@@ -61,6 +63,7 @@ async function applyVote(
         score: SCORE(nextLoser.rating, nextLoser.rd),
         losses: { increment: 1 },
         timesShown: { increment: 1 },
+        lastRatedAt: ratedAt,
       },
       select: sideSelect,
     }),

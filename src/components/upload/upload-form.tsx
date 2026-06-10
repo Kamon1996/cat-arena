@@ -67,7 +67,8 @@ export function UploadForm() {
         }),
       });
       if (!res.ok) {
-        throw new Error("Could not create cat");
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Could not create cat");
       }
       const { slug, screens } = (await res.json()) as {
         slug: string;

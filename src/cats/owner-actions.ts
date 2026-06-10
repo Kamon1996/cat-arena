@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireOwnedCat } from "@/cats/owner-guard";
-import { MAX_IMAGES_PER_CAT } from "@/lib/constants";
+import { MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { deleteObjects } from "@/lib/r2";
+import { checkUploadBurst } from "@/lib/rate-limit";
+import { isDuplicateImage, isSha256UniqueViolation } from "@/storage/image-dedupe";
 import { ingestImage } from "@/storage/ingest-image";
 import { cardKey, originalKey, thumbKey } from "@/storage/keys";
+import { fetchOriginal, sha256OfBuffer } from "@/storage/process-image";
 
 export type OwnerActionResult = { ok: true } | { ok: false; error: string };
 
@@ -64,10 +67,33 @@ export async function addCatImage(catId: string, r2Key: string): Promise<OwnerAc
     return { ok: false, error: "image_limit" };
   }
   const position = existing.reduce((max, img) => Math.max(max, img.position), -1) + 1;
-  const { width, height, status } = await ingestImage(imageId);
-  await prisma.catImage.create({
-    data: { id: imageId, catId, r2Key, width, height, position, status },
-  });
+  // Shares the upload-surface budget with /api/upload/sign and POST /api/cats.
+  const burst = await checkUploadBurst(owned.cat.ownerId);
+  if (!burst.ok) {
+    return { ok: false, error: "rate_limited" };
+  }
+  // Fetch + hash first so size and duplicate violations are rejected before
+  // any sharp encode or Workers AI call (same order as POST /api/cats).
+  const original = await fetchOriginal(imageId);
+  if (original.byteLength > MAX_UPLOAD_BYTES) {
+    return { ok: false, error: "too_large" };
+  }
+  if (await isDuplicateImage([sha256OfBuffer(original)])) {
+    return { ok: false, error: "duplicate_image" };
+  }
+  const { width, height, status, sha256 } = await ingestImage(imageId, original);
+  try {
+    await prisma.catImage.create({
+      data: { id: imageId, catId, r2Key, sha256, width, height, position, status },
+    });
+  } catch (err) {
+    // Race backstop: a concurrent identical upload can pass the check above;
+    // the @unique(sha256) constraint settles it.
+    if (isSha256UniqueViolation(err)) {
+      return { ok: false, error: "duplicate_image" };
+    }
+    throw err;
+  }
   revalidatePath(DASHBOARD_PATH);
   return { ok: true };
 }

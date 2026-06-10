@@ -107,11 +107,23 @@ describe("pickPairCore", () => {
     expect(result?.b.id).toBe("far");
   });
 
-  it("returns null when the only other cats are A itself or already seen", () => {
+  it("falls back to repeating seen cats when nothing unseen remains", () => {
+    // Small catalog: every opponent is already in the seen buffer. Serving a
+    // repeat beats starving the duel into a permanent 404.
     const result = pickPairCore({
       aPool: [cat("a", 800, 350, 0)],
       bPool: [cat("a", 800, 350, 0), cat("seen", 810, 90, 5)],
       seenCatIds: ["seen"],
+      rng: seededRng([0, 0.99]),
+    });
+    expect(result?.b.id).toBe("seen");
+  });
+
+  it("returns null when the only candidate is A itself", () => {
+    const result = pickPairCore({
+      aPool: [cat("a", 800, 350, 0)],
+      bPool: [cat("a", 800, 350, 0)],
+      seenCatIds: [],
       rng: seededRng([0, 0.99]),
     });
     expect(result).toBeNull();

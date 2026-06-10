@@ -1,5 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+  // "native" → local dev (macOS/whatever). "debian-openssl-3.0.x" → the Docker
+  // runtime (node:22-bookworm-slim, Debian 12 / OpenSSL 3) used for the VPS deploy,
+  // so the query engine binary is generated for the container platform too.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -31,9 +35,10 @@ model Cat {
   orgs       CatOrg[]
   createdAt  DateTime   @default(now())
   approvedAt DateTime?
+  lastRatedAt DateTime? // last vote that updated this cat's rating; drives RD-decay cron
 
   @@index([status, score]) // leaderboard
-  @@index([status, rd]) // "needs data" pool for pairing
+  @@index([status, rd]) // "needs data" pool for pairing + RD-decay
   @@index([ownerId]) // enforce ≤2 cats per user
 }
 
@@ -42,6 +47,7 @@ model CatImage {
   catId            String
   cat              Cat         @relation(fields: [catId], references: [id], onDelete: Cascade)
   r2Key            String // original; thumb/card derived by key convention
+  sha256           String?     @unique // hex digest of the original bytes; null on legacy rows
   width            Int
   height           Int
   position         Int         @default(0) // carousel order

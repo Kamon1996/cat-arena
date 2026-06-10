@@ -1,0 +1,98 @@
+# Production stack for a single VPS: Next.js app + Redis (rate-limit/nonce) +
+# Caddy (reverse proxy with automatic Let's Encrypt TLS).
+#
+# PostgreSQL is NOT here — it is managed (Selectel/Timeweb/Yandex), pointed at via
+# DATABASE_URL/DIRECT_URL in .env. (A self-hosted postgres service is sketched,
+# commented out, at the bottom if you ever want fully-on-box.)
+#
+# Usage on the server:
+#   1) put production values in .env (see .env.example; set REDIS_DRIVER=redis,
+#      REDIS_URL=redis://redis:6379, DOMAIN=your-domain.ru)
+#   2) docker compose up -d --build
+#      → the `migrate` service applies DB migrations once, then `app` starts.
+
+services:
+  # One-shot: applies `prisma migrate deploy`, then exits. `app` waits for it.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    env_file: .env
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      args:
+        # NEXT_PUBLIC_* are inlined at build time — pass them through from .env.
+        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
+        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Use the in-compose Redis over the private network.
+      REDIS_DRIVER: redis
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  redis-data:
+  caddy-data:
+  caddy-config:
+# ── Optional: fully self-hosted Postgres (instead of managed) ────────────────
+# Uncomment and point DATABASE_URL/DIRECT_URL at it. You then own backups
+# (pg_dump→S3) and pooling (add a pgbouncer container). Managed is recommended.
+#  postgres:
+#    image: postgres:16
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_DB: catarena
+#      POSTGRES_USER: catarena
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#    volumes:
+#      - pg-data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U catarena"]
+#      interval: 10s
+#      timeout: 3s
+#      retries: 5
+#  # add `pg-data:` under volumes: if you enable this

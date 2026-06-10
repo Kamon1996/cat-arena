@@ -21,6 +21,17 @@ vi.mock("@aws-sdk/client-s3", () => ({
       this.input = input;
     }
   },
+  ListObjectsV2Command: class {
+    input: { Bucket?: string; Prefix?: string; MaxKeys?: number; ContinuationToken?: string };
+    constructor(input: {
+      Bucket?: string;
+      Prefix?: string;
+      MaxKeys?: number;
+      ContinuationToken?: string;
+    }) {
+      this.input = input;
+    }
+  },
 }));
 
 vi.mock("@aws-sdk/s3-request-presigner", () => ({ getSignedUrl: vi.fn() }));
@@ -32,10 +43,12 @@ vi.mock("@/lib/env", () => ({
     R2_SECRET_ACCESS_KEY: "secret",
     R2_BUCKET: "bucket",
     R2_PUBLIC_URL: "https://cdn.test",
+    S3_REGION: "auto",
+    S3_FORCE_PATH_STYLE: false,
   },
 }));
 
-import { deleteObjects } from "./r2";
+import { deleteObjects, listKeys } from "./r2";
 
 describe("deleteObjects", () => {
   beforeEach(() => {
@@ -64,5 +77,62 @@ describe("deleteObjects", () => {
   it("never throws even if the R2 send fails (best-effort cleanup)", async () => {
     sendMock.mockRejectedValueOnce(new Error("network"));
     await expect(deleteObjects(["cats/a/original"])).resolves.toBeUndefined();
+  });
+});
+
+describe("listKeys", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  type ListCommand = {
+    input: { Prefix?: string; MaxKeys?: number; ContinuationToken?: string };
+  };
+
+  it("returns a single page and stops when the listing is not truncated", async () => {
+    sendMock.mockResolvedValueOnce({
+      Contents: [{ Key: "cats/a/original" }, { Key: "cats/b/original" }],
+      IsTruncated: false,
+    });
+    const keys = await listKeys("cats/", 1000);
+    expect(keys.map((k) => k.key)).toEqual(["cats/a/original", "cats/b/original"]);
+    expect(sendMock).toHaveBeenCalledOnce();
+  });
+
+  it("follows continuation tokens across pages instead of re-scanning page one", async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Contents: [{ Key: "cats/a/original" }, { Key: "cats/b/original" }],
+        IsTruncated: true,
+        NextContinuationToken: "token-1",
+      })
+      .mockResolvedValueOnce({
+        Contents: [{ Key: "cats/c/original" }],
+        IsTruncated: false,
+      });
+
+    const keys = await listKeys("cats/", 3);
+    expect(keys.map((k) => k.key)).toEqual([
+      "cats/a/original",
+      "cats/b/original",
+      "cats/c/original",
+    ]);
+    expect(sendMock).toHaveBeenCalledTimes(2);
+
+    const second = sendMock.mock.calls[1]?.[0] as ListCommand;
+    expect(second.input.ContinuationToken).toBe("token-1");
+    // The second page only needs to fill the remaining budget (3 - 2 = 1).
+    expect(second.input.MaxKeys).toBe(1);
+  });
+
+  it("stops at maxKeys even when more pages remain", async () => {
+    sendMock.mockResolvedValueOnce({
+      Contents: [{ Key: "cats/a/original" }, { Key: "cats/b/original" }],
+      IsTruncated: true,
+      NextContinuationToken: "token-1",
+    });
+    const keys = await listKeys("cats/", 2);
+    expect(keys).toHaveLength(2);
+    expect(sendMock).toHaveBeenCalledOnce();
   });
 });

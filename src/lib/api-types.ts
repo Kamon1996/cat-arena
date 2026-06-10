@@ -14,8 +14,13 @@ export type PairCat = {
 
 export type PairResponse = {
   token: string;
+  expiresAt: number; // epoch ms — the client drops queued pairs past this
   a: PairCat;
   b: PairCat;
+};
+
+export type PairBatchResponse = {
+  pairs: PairResponse[];
 };
 
 export type VoteRequest = {

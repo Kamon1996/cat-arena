@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref (saves free CI minutes).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Prisma client types are needed for typecheck/test/build; no DB required.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint (Biome)
+        run: npm run lint
+
+      - name: Lint CSS (Stylelint)
+        run: npm run lint:css
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Redis integration test is gated behind REDIS_IT (unset here) → skipped;
+      # all other tests mock their deps, so no DB/Redis service is needed.
+      - name: Test
+        run: npm test
+
+      # Build with throwaway placeholder env — Auth.js + the Zod env schema read
+      # these at module init during `next build`. Real values live in deploy env.
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+          AUTH_SECRET: ci_placeholder_secret_at_least_16
+          AUTH_URL: https://ci.local
+          AUTH_GOOGLE_ID: ci
+          AUTH_GOOGLE_SECRET: ci
+          R2_ACCOUNT_ID: ci
+          R2_ACCESS_KEY_ID: ci
+          R2_SECRET_ACCESS_KEY: ci
+          R2_BUCKET: ci
+          R2_PUBLIC_URL: https://cdn.ci.local
+          REDIS_DRIVER: redis
+          REDIS_URL: redis://localhost:6379
+          PAIR_TOKEN_SECRET: ci_placeholder_pairtoken_at_least16
+          CLOUDFLARE_ACCOUNT_ID: ci
+          CLOUDFLARE_API_TOKEN: ci
+          NEXT_PUBLIC_POSTHOG_KEY: phc_ci
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+          SENTRY_DSN: https://ci@o1.ingest.sentry.io/1

@@ -1,8 +1,15 @@
+import { Buffer } from "node:buffer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 
 const {
   requireOwnedCatMock,
   ingestMock,
+  dedupeMock,
+  violationMock,
+  fetchOriginalMock,
+  burstMock,
   deleteObjectsMock,
   catUpdate,
   catDelete,
@@ -14,6 +21,10 @@ const {
 } = vi.hoisted(() => ({
   requireOwnedCatMock: vi.fn(),
   ingestMock: vi.fn(),
+  dedupeMock: vi.fn(),
+  violationMock: vi.fn(),
+  fetchOriginalMock: vi.fn(),
+  burstMock: vi.fn(),
   deleteObjectsMock: vi.fn(),
   catUpdate: vi.fn(),
   catDelete: vi.fn(),
@@ -27,6 +38,15 @@ const {
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/cats/owner-guard", () => ({ requireOwnedCat: requireOwnedCatMock }));
 vi.mock("@/storage/ingest-image", () => ({ ingestImage: ingestMock }));
+vi.mock("@/storage/image-dedupe", () => ({
+  isDuplicateImage: dedupeMock,
+  isSha256UniqueViolation: violationMock,
+}));
+vi.mock("@/storage/process-image", () => ({
+  fetchOriginal: fetchOriginalMock,
+  sha256OfBuffer: () => "a".repeat(64),
+}));
+vi.mock("@/lib/rate-limit", () => ({ checkUploadBurst: burstMock }));
 vi.mock("@/lib/r2", () => ({ deleteObjects: deleteObjectsMock, publicUrl: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -52,11 +72,23 @@ function owned(status = "ACTIVE") {
   };
 }
 
+const SHA256_FIXTURE = "a".repeat(64);
+
 describe("owner-actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireOwnedCatMock.mockResolvedValue(owned());
-    ingestMock.mockResolvedValue({ width: 800, height: 600, status: "PENDING" });
+    ingestMock.mockResolvedValue({
+      width: 800,
+      height: 600,
+      status: "PENDING",
+      catConfidence: 0.1,
+      sha256: SHA256_FIXTURE,
+    });
+    dedupeMock.mockResolvedValue(false);
+    violationMock.mockReturnValue(false);
+    fetchOriginalMock.mockResolvedValue(Buffer.from([1]));
+    burstMock.mockResolvedValue({ ok: true, remaining: 9 });
     imageFindMany.mockResolvedValue([{ position: 0 }]);
     imageFindUnique.mockResolvedValue({ id: "img_1", catId: "cat_1" });
     imageCount.mockResolvedValue(2);
@@ -93,18 +125,48 @@ describe("owner-actions", () => {
       imageFindMany.mockResolvedValueOnce([{ position: 0 }, { position: 1 }]);
       const res = await addCatImage("cat_1", "cats/img_new/original");
       expect(res).toEqual({ ok: true });
-      expect(ingestMock).toHaveBeenCalledWith("img_new");
+      // The original is fetched once (for the hash) and reused for processing.
+      expect(ingestMock).toHaveBeenCalledWith("img_new", Buffer.from([1]));
       expect(imageCreate).toHaveBeenCalledWith({
         data: {
           id: "img_new",
           catId: "cat_1",
           r2Key: "cats/img_new/original",
+          sha256: SHA256_FIXTURE,
           width: 800,
           height: 600,
           position: 2,
           status: "PENDING",
         },
       });
+    });
+    it("refuses a photo whose hash is already stored, before any processing", async () => {
+      dedupeMock.mockResolvedValueOnce(true);
+      const res = await addCatImage("cat_1", "cats/img_new/original");
+      expect(res).toEqual({ ok: false, error: "duplicate_image" });
+      expect(dedupeMock).toHaveBeenCalledWith([SHA256_FIXTURE]);
+      expect(ingestMock).not.toHaveBeenCalled();
+      expect(imageCreate).not.toHaveBeenCalled();
+    });
+    it("refuses an original larger than the upload limit (declared size is advisory)", async () => {
+      fetchOriginalMock.mockResolvedValueOnce(Buffer.alloc(MAX_UPLOAD_BYTES + 1));
+      const res = await addCatImage("cat_1", "cats/img_new/original");
+      expect(res).toEqual({ ok: false, error: "too_large" });
+      expect(ingestMock).not.toHaveBeenCalled();
+    });
+    it("refuses when the upload budget is exhausted, before any R2 fetch", async () => {
+      burstMock.mockResolvedValueOnce({ ok: false, remaining: 0 });
+      const res = await addCatImage("cat_1", "cats/img_new/original");
+      expect(res).toEqual({ ok: false, error: "rate_limited" });
+      expect(burstMock).toHaveBeenCalledWith("user_1"); // keyed by the owner id
+      expect(fetchOriginalMock).not.toHaveBeenCalled();
+      expect(ingestMock).not.toHaveBeenCalled();
+    });
+    it("maps a sha256 unique-violation race on create to duplicate_image", async () => {
+      imageCreate.mockRejectedValueOnce(new Error("unique violation"));
+      violationMock.mockReturnValueOnce(true);
+      const res = await addCatImage("cat_1", "cats/img_new/original");
+      expect(res).toEqual({ ok: false, error: "duplicate_image" });
     });
     it("refuses when the cat already has MAX_IMAGES_PER_CAT images", async () => {
       imageFindMany.mockResolvedValueOnce([{ position: 0 }, { position: 1 }, { position: 2 }]);

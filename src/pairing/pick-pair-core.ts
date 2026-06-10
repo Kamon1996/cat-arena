@@ -65,10 +65,16 @@ function pickPairCore(input: PickPairCoreInput): PickedPairCore | null {
   }
 
   const seen = new Set(seenCatIds);
-  // Eligible opponents: exclude A itself and recently-seen cats, nearest score first.
-  const eligibleB = bPool
-    .filter((c) => c.id !== a.id && !seen.has(c.id))
-    .sort((x, y) => Math.abs(x.score - a.score) - Math.abs(y.score - a.score));
+  const notSelf = bPool.filter((c) => c.id !== a.id);
+  const unseen = notSelf.filter((c) => !seen.has(c.id));
+  // Seen-exclusion is a quality preference like the score window below, not a
+  // hard requirement: with a catalog smaller than the seen buffer every cat is
+  // quickly "seen" (a prefetched batch reserves up to 10 ids per request), so a
+  // hard filter would starve the duel into permanent 404s. Repeat cats instead.
+  // Eligible opponents are sorted nearest score first.
+  const eligibleB = (unseen.length > 0 ? unseen : notSelf).sort(
+    (x, y) => Math.abs(x.score - a.score) - Math.abs(y.score - a.score),
+  );
 
   if (eligibleB.length === 0 || aPool.length + eligibleB.length < PAIR_MIN_POOL) {
     return null;

@@ -4,6 +4,7 @@ import { UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CropDialog } from "@/components/upload/crop-dialog";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,8 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
   const dragCounter = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
+  // Newly picked files wait here for a crop decision before joining `files`.
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
 
   useEffect(() => {
     const urls = files.map((f) => URL.createObjectURL(f));
@@ -39,16 +42,38 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
     if (!incoming) {
       return;
     }
-    const accepted = Array.from(incoming).filter(isAllowed);
-    const next = [...files, ...accepted].slice(0, MAX_IMAGES_PER_CAT);
-    onChange(next);
+    // Drop re-picks of an already-selected file: the server rejects duplicate
+    // photos anyway (after uploading them), and identical files would collide
+    // on the name-size-lastModified preview key below.
+    const fileKey = (f: File) => `${f.name}-${f.size}-${f.lastModified}`;
+    const present = new Set([...files, ...cropQueue].map(fileKey));
+    const remaining = MAX_IMAGES_PER_CAT - files.length - cropQueue.length;
+    const accepted = Array.from(incoming)
+      .filter((f) => {
+        if (!isAllowed(f) || present.has(fileKey(f))) {
+          return false;
+        }
+        present.add(fileKey(f));
+        return true;
+      })
+      .slice(0, Math.max(0, remaining));
+    // Every new photo goes through the crop step before it joins the list.
+    setCropQueue((queue) => [...queue, ...accepted]);
+  }
+
+  /** A crop decision for the queue head: the file to keep, or null to drop it. */
+  function resolveCrop(result: File | null): void {
+    if (result) {
+      onChange([...files, result].slice(0, MAX_IMAGES_PER_CAT));
+    }
+    setCropQueue((queue) => queue.slice(1));
   }
 
   function removeAt(index: number): void {
     onChange(files.filter((_, i) => i !== index));
   }
 
-  const canAddMore = files.length < MAX_IMAGES_PER_CAT && !disabled;
+  const canAddMore = files.length + cropQueue.length < MAX_IMAGES_PER_CAT && !disabled;
 
   return (
     <div className="flex flex-col gap-3">
@@ -151,6 +176,13 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
           })}
         </ul>
       ) : null}
+
+      <CropDialog
+        file={cropQueue[0] ?? null}
+        onCropped={resolveCrop}
+        onUseOriginal={resolveCrop}
+        onCancel={() => resolveCrop(null)}
+      />
     </div>
   );
 }

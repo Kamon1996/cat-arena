@@ -4,8 +4,12 @@ const HOME_URL = "/";
 const PAIR_ROUTE = "**/api/pair*";
 const VOTE_ROUTE = "**/api/vote";
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const EXPIRES_AT_MS = Date.now() + ONE_HOUR_MS;
+
 const PAIR_ONE = {
   token: "tok-1",
+  expiresAt: EXPIRES_AT_MS,
   a: {
     id: "ca",
     name: "Alpha",
@@ -21,6 +25,7 @@ const PAIR_ONE = {
 };
 const PAIR_TWO = {
   token: "tok-2",
+  expiresAt: EXPIRES_AT_MS,
   a: {
     id: "cc",
     name: "Charlie",
@@ -34,17 +39,34 @@ const PAIR_TWO = {
     images: [{ url: "https://placecats.com/303/303", width: 303, height: 303, position: 0 }],
   },
 };
+const PAIR_REFILL = {
+  token: "tok-3",
+  expiresAt: EXPIRES_AT_MS,
+  a: {
+    id: "ce",
+    name: "Echo",
+    slug: "echo-1",
+    images: [{ url: "https://placecats.com/304/304", width: 304, height: 304, position: 0 }],
+  },
+  b: {
+    id: "cf",
+    name: "Foxtrot",
+    slug: "foxtrot-1",
+    images: [{ url: "https://placecats.com/305/305", width: 305, height: 305, position: 0 }],
+  },
+};
 
 test.describe("Home duel", () => {
-  test("loads a pair, votes, and sees a new pair", async ({ page }) => {
+  test("loads a prefetched batch, votes, and instantly sees the next pair", async ({ page }) => {
     let pairCount = 0;
     await page.route(PAIR_ROUTE, async (route) => {
-      const body = pairCount === 0 ? PAIR_ONE : PAIR_TWO;
+      // First request: the initial batch. Later requests: watermark top-ups.
+      const pairs = pairCount === 0 ? [PAIR_ONE, PAIR_TWO] : [PAIR_REFILL];
       pairCount += 1;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(body),
+        body: JSON.stringify({ pairs }),
       });
     });
     await page.route(VOTE_ROUTE, (route) =>

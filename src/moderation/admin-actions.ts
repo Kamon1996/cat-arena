@@ -22,10 +22,13 @@ export async function approveImage(imageId: string): Promise<void> {
   });
 }
 
+// Rejecting/banning frees the image's sha256 (set to null): rejected content
+// must not reserve its hash forever, or a squatter's rejected copy would 409
+// the legitimate owner's upload. A freed photo re-enters moderation on re-upload.
 export async function rejectImage(imageId: string, reasons: RejectionReason[] = []): Promise<void> {
   await prisma.catImage.update({
     where: { id: imageId },
-    data: { status: "REJECTED", rejectionReasons: { set: reasons } },
+    data: { status: "REJECTED", rejectionReasons: { set: reasons }, sha256: null },
   });
 }
 
@@ -33,10 +36,11 @@ export async function rejectImage(imageId: string, reasons: RejectionReason[] = 
 export async function rejectCatImages(catId: string, reasons: RejectionReason[]): Promise<void> {
   await prisma.catImage.updateMany({
     where: { catId, status: "PENDING" },
-    data: { status: "REJECTED", rejectionReasons: { set: reasons } },
+    data: { status: "REJECTED", rejectionReasons: { set: reasons }, sha256: null },
   });
 }
 
+// Hiding is reversible moderation — the cat may come back, so its hashes stay.
 export async function hideCat(catId: string): Promise<void> {
   await prisma.cat.update({
     where: { id: catId },
@@ -45,10 +49,17 @@ export async function hideCat(catId: string): Promise<void> {
 }
 
 export async function banCat(catId: string): Promise<void> {
-  await prisma.cat.update({
-    where: { id: catId },
-    data: { status: "BANNED" },
-  });
+  await prisma.$transaction([
+    prisma.cat.update({
+      where: { id: catId },
+      data: { status: "BANNED" },
+    }),
+    // A banned cat never returns to the arena — free its hashes (see rejectImage).
+    prisma.catImage.updateMany({
+      where: { catId },
+      data: { sha256: null },
+    }),
+  ]);
 }
 
 export async function deleteCat(catId: string): Promise<void> {

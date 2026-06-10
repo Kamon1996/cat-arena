@@ -11,6 +11,8 @@ vi.mock("@/moderation/screen-image", () => ({ screenImage: screenMock }));
 
 import { ingestImage } from "./ingest-image";
 
+const SHA256_FIXTURE = "a".repeat(64);
+
 describe("ingestImage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -18,15 +20,23 @@ describe("ingestImage", () => {
       width: 800,
       height: 600,
       screenBuffer: Buffer.from([1]),
+      sha256: SHA256_FIXTURE,
     });
     screenMock.mockResolvedValue({ status: "APPROVED", catConfidence: 0.9 });
   });
 
-  it("processes then screens, returning dims, status, and confidence", async () => {
+  it("processes then screens, returning dims, status, confidence, and hash", async () => {
     const result = await ingestImage("img_1");
-    expect(processMock).toHaveBeenCalledWith("img_1");
+    // No prefetched buffer → processImage downloads the original itself.
+    expect(processMock).toHaveBeenCalledWith("img_1", undefined);
     expect(screenMock).toHaveBeenCalledWith(Buffer.from([1]));
-    expect(result).toEqual({ width: 800, height: 600, status: "APPROVED", catConfidence: 0.9 });
+    expect(result).toEqual({
+      width: 800,
+      height: 600,
+      status: "APPROVED",
+      catConfidence: 0.9,
+      sha256: SHA256_FIXTURE,
+    });
   });
 
   it("passes through a PENDING screen verdict", async () => {

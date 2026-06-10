@@ -16,6 +16,14 @@ type AddImageProps = {
   disabled?: boolean;
 };
 
+// Owner-action error codes → human messages (codes come from owner-actions.ts).
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  duplicate_image: "This photo has already been uploaded.",
+  image_limit: "Photo limit reached for this cat.",
+  too_large: "This photo exceeds the upload size limit.",
+  rate_limited: "Too many uploads — try again in a minute.",
+};
+
 /** A dashed "Add photo" cell that lives inside the gallery grid. Picking files
  *  uploads them straight to R2 and registers them (PENDING) on the cat. */
 export function AddImage({ catId, remaining, disabled }: AddImageProps) {
@@ -47,8 +55,9 @@ export function AddImage({ catId, remaining, disabled }: AddImageProps) {
       });
       router.refresh();
     } catch (err) {
+      const raw = err instanceof Error ? err.message : "";
       catToast.error("Could not add photo", {
-        message: err instanceof Error ? err.message : "Please try again.",
+        message: ACTION_ERROR_MESSAGES[raw] ?? (raw || "Please try again."),
       });
     } finally {
       setBusy(false);

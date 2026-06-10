@@ -1,0 +1,31 @@
+# Build artifacts & deps (rebuilt inside the image)
+node_modules
+.next
+out
+
+# Local env & secrets — provided at runtime via env_file, never baked in
+.env
+.env.local
+.env.*.local
+
+# VCS, CI, editor
+.git
+.github
+.vscode
+.idea
+
+# Tests, stories, docs — not needed in the production image
+**/*.test.ts
+**/*.test.tsx
+**/*.stories.tsx
+tests
+docs
+.storybook
+storybook-static
+
+# Misc
+.DS_Store
+*.log
+coverage
+playwright-report
+test-results

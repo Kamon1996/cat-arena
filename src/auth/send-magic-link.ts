@@ -4,7 +4,16 @@ import { AUTH } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { renderMagicLinkEmail } from "./email";
 
-const resend = new Resend(env.RESEND_API_KEY);
+let resend: Resend | null = null;
+
+// Lazy so importing this module is side-effect free (no env read at import) —
+// `next build` can trace routes without RESEND_API_KEY present.
+function getResend(): Resend {
+  if (!resend) {
+    resend = new Resend(env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 interface SendVerificationRequestParams {
   identifier: string;
@@ -25,7 +34,7 @@ export async function sendMagicLink({
 
   const html = await renderMagicLinkEmail(url);
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from,
     to: identifier,
     subject: AUTH.EMAIL_SUBJECT,

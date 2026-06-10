@@ -22,8 +22,11 @@ const CREATE_RESPONSE = {
   slug: ORG_SLUG,
   joinCode: "join-code-fixed-000000000",
 };
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 const ORG_PAIR = {
   token: "tok-org-1",
+  expiresAt: Date.now() + ONE_HOUR_MS,
   a: {
     id: "ca",
     name: "Alpha",
@@ -60,7 +63,7 @@ test.describe("Organizations", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(ORG_PAIR),
+        body: JSON.stringify({ pairs: [ORG_PAIR] }),
       }),
     );
     await page.route(VOTE_ROUTE, (route) =>

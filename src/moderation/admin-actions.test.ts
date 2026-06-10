@@ -7,7 +7,10 @@ const tx = {
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
+    // Supports both interactive (callback) and batch (array) transaction forms.
+    $transaction: vi.fn(async (arg: ((t: typeof tx) => unknown) | Promise<unknown>[]) =>
+      typeof arg === "function" ? arg(tx) : Promise.all(arg),
+    ),
     catImage: { update: vi.fn(), updateMany: vi.fn() },
     cat: { update: vi.fn(), delete: vi.fn() },
     user: { update: vi.fn() },
@@ -56,36 +59,41 @@ describe("admin-actions", () => {
     expect(tx.cat.update).not.toHaveBeenCalled();
   });
 
-  it("rejectImage sets image REJECTED", async () => {
+  it("rejectImage sets image REJECTED and frees its sha256", async () => {
     await rejectImage(IMAGE_ID);
     expect(prisma.catImage.update).toHaveBeenCalledWith({
       where: { id: IMAGE_ID },
-      data: { status: "REJECTED", rejectionReasons: { set: [] } },
+      data: { status: "REJECTED", rejectionReasons: { set: [] }, sha256: null },
     });
   });
 
-  it("rejectCatImages rejects all pending images with the given reasons", async () => {
+  it("rejectCatImages rejects all pending images, freeing their hashes", async () => {
     const reasons: RejectionReason[] = ["Not a cat", "Blurry / low-res"];
     await rejectCatImages(CAT_ID, reasons);
     expect(prisma.catImage.updateMany).toHaveBeenCalledWith({
       where: { catId: CAT_ID, status: "PENDING" },
-      data: { status: "REJECTED", rejectionReasons: { set: reasons } },
+      data: { status: "REJECTED", rejectionReasons: { set: reasons }, sha256: null },
     });
   });
 
-  it("hideCat sets cat HIDDEN", async () => {
+  it("hideCat sets cat HIDDEN and keeps the hashes (hide is reversible)", async () => {
     await hideCat(CAT_ID);
     expect(prisma.cat.update).toHaveBeenCalledWith({
       where: { id: CAT_ID },
       data: { status: "HIDDEN" },
     });
+    expect(prisma.catImage.updateMany).not.toHaveBeenCalled();
   });
 
-  it("banCat sets cat BANNED", async () => {
+  it("banCat sets cat BANNED and frees all its image hashes", async () => {
     await banCat(CAT_ID);
     expect(prisma.cat.update).toHaveBeenCalledWith({
       where: { id: CAT_ID },
       data: { status: "BANNED" },
+    });
+    expect(prisma.catImage.updateMany).toHaveBeenCalledWith({
+      where: { catId: CAT_ID },
+      data: { sha256: null },
     });
   });
 
