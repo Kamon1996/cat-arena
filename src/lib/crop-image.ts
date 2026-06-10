@@ -4,6 +4,9 @@ const MIN_OUTPUT_EDGE = 1;
 const STEP_DOWN_FACTOR = 2; // halve per pass — a single >50% reduction blurs badly
 const WEBP_OUTPUT_QUALITY = 0.9;
 const OUTPUT_MIME = "image/webp";
+// Letterbox color when the user zooms out past "cover" and the crop extends
+// beyond the photo. Must match the cropper viewport background (WYSIWYG).
+const PAD_FILL = "#ffffff";
 
 export type CropAreaPixels = {
   x: number;
@@ -80,8 +83,14 @@ export async function cropImageToFile(file: File, area: CropAreaPixels): Promise
     const targetEdge = outputEdgeFor(cropEdge);
 
     // Pass 1: extract the crop region (capped to the browser-safe canvas edge).
+    // The white fill becomes the letterbox padding wherever the crop area
+    // extends past the photo (zoomed out below cover) — the canvas spec clips
+    // an out-of-bounds source rect and shrinks the destination proportionally,
+    // so the photo lands in the right spot with padding around it.
     const firstEdge = Math.max(targetEdge, Math.min(Math.round(cropEdge), MAX_CANVAS_EDGE));
     let current = makeCanvas(firstEdge);
+    current.ctx.fillStyle = PAD_FILL;
+    current.ctx.fillRect(0, 0, firstEdge, firstEdge);
     current.ctx.drawImage(
       image,
       area.x,

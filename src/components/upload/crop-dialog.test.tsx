@@ -48,6 +48,19 @@ describe("CropDialog", () => {
     expect(screen.queryByText(/frame your cat/i)).not.toBeInTheDocument();
   });
 
+  it("defers mounting the cropper until the dialog's open animation settles", async () => {
+    const { baseElement } = render(
+      <CropDialog file={ORIGINAL} onCropped={vi.fn()} onUseOriginal={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    // Mounting mid-animation would make the cropper measure a scaled container;
+    // meanwhile a static contain preview of the photo fills the square instead
+    // of a white flash.
+    expect(screen.queryByTestId("cropper")).not.toBeInTheDocument();
+    expect(baseElement.querySelector("img")).toBeInTheDocument();
+    expect(await screen.findByTestId("cropper")).toBeInTheDocument();
+  });
+
   it("crops the file and hands the result back", async () => {
     const onCropped = vi.fn();
     const user = userEvent.setup();
@@ -60,7 +73,9 @@ describe("CropDialog", () => {
       />,
     );
 
-    await user.click(await screen.findByRole("button", { name: /use this crop/i }));
+    const confirm = await screen.findByRole("button", { name: /use this crop/i });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
 
     await waitFor(() => expect(onCropped).toHaveBeenCalledWith(CROPPED));
     expect(cropMock).toHaveBeenCalledWith(ORIGINAL, FIXED_AREA);
@@ -97,7 +112,9 @@ describe("CropDialog", () => {
       />,
     );
 
-    await user.click(await screen.findByRole("button", { name: /use this crop/i }));
+    const confirm = await screen.findByRole("button", { name: /use this crop/i });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
 
     await waitFor(() => expect(onUseOriginal).toHaveBeenCalledWith(ORIGINAL));
     expect(onCropped).not.toHaveBeenCalled();
