@@ -8,7 +8,7 @@ import { CatCard } from "@/components/dashboard/cat-card";
 import { Button } from "@/components/ui/button";
 import { MAX_CATS_PER_USER } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import { thumbUrl } from "@/storage/keys";
+import { cardUrl, thumbUrl } from "@/storage/keys";
 
 const ACTIVE_STATUS = "ACTIVE";
 
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       timesShown: true,
       images: {
         orderBy: { position: "asc" },
-        select: { id: true, status: true },
+        select: { id: true, status: true, rejectionReasons: true, width: true, height: true },
       },
     },
   });
@@ -59,7 +59,12 @@ export default async function DashboardPage() {
         images: cat.images.map((image) => ({
           id: image.id,
           status: image.status,
+          rejectionReasons: image.rejectionReasons,
+          width: image.width,
+          height: image.height,
           thumbUrl: thumbUrl(image.id),
+          // The lightbox shows the 800px card variant — plenty for a polaroid frame.
+          fullUrl: cardUrl(image.id),
         })),
       };
     }),
@@ -102,7 +107,7 @@ export default async function DashboardPage() {
           </Button>
         </div>
       ) : (
-        <section className="grid gap-5 sm:grid-cols-2">
+        <section className="grid items-start gap-6 lg:grid-cols-2">
           {cards.map((cat) => (
             <CatCard key={cat.id} cat={cat} />
           ))}
