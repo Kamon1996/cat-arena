@@ -30,6 +30,14 @@ if (!window.ResizeObserver) {
   } as unknown as typeof ResizeObserver;
 }
 
+// jsdom has no layout engine, so every element measures 0×0. Report a non-zero
+// clientWidth so width-measuring components (react-photo-album) render content.
+const JSDOM_CLIENT_WIDTH = 1024;
+Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+  configurable: true,
+  get: () => JSDOM_CLIENT_WIDTH,
+});
+
 if (!window.IntersectionObserver) {
   window.IntersectionObserver = class {
     readonly root = null;

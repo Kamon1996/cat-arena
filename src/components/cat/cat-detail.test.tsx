@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { CatDetail } from "@/components/cat/cat-detail";
@@ -40,6 +41,14 @@ describe("CatDetail", () => {
     for (const img of images) {
       expect(img).toHaveAttribute("alt", expect.stringMatching(/fluffy/i));
     }
+  });
+
+  it("opens the lightbox when a gallery photo is clicked", async () => {
+    const user = userEvent.setup();
+    render(<CatDetail cat={CAT} />);
+    await user.click(screen.getByRole("button", { name: /fluffy — photo 1/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(/photo 1 of 2/i);
   });
 
   it("lists recent duels", () => {

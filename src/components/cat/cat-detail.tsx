@@ -1,14 +1,20 @@
-import { CdnImage } from "@/components/cat/cdn-image";
+import { CatPhotoAlbum } from "@/components/cat/cat-photo-album";
 import type { CatPage } from "@/data/cat-page";
 
-const LCP_INDEX = 0;
-const GALLERY_SIZES = "(max-width: 768px) 100vw, 800px";
+const FIRST_PHOTO_NUMBER = 1;
 
 type CatDetailProps = {
   cat: CatPage;
 };
 
 export function CatDetail({ cat }: CatDetailProps) {
+  const photos = cat.images.map((img, index) => ({
+    src: img.url,
+    width: img.width,
+    height: img.height,
+    alt: `${cat.name} — photo ${index + FIRST_PHOTO_NUMBER}`,
+  }));
+
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
       <header>
@@ -19,21 +25,7 @@ export function CatDetail({ cat }: CatDetailProps) {
       </header>
 
       <section aria-label={`Photos of ${cat.name}`}>
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {cat.images.map((image, index) => (
-            <li key={image.url} className="overflow-hidden rounded-xl border-2 border-ink">
-              <CdnImage
-                src={image.url}
-                alt={`${cat.name} — photo ${index + 1} of ${cat.images.length}`}
-                width={image.width}
-                height={image.height}
-                sizes={GALLERY_SIZES}
-                priority={index === LCP_INDEX}
-                className="h-auto w-full object-cover"
-              />
-            </li>
-          ))}
-        </ul>
+        <CatPhotoAlbum catName={cat.name} photos={photos} />
       </section>
 
       <section aria-label="Rating">
