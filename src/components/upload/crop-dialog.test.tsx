@@ -4,15 +4,21 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 const FIXED_AREA = { x: 0, y: 0, width: 100, height: 100 };
 
+// The dialog's props to the cropper, captured for assertions.
+const cropperProps: { current: Record<string, unknown> | null } = { current: null };
+
 // Stub cropper: reports a fixed pixel area on mount so the confirm button
 // becomes enabled without real layout or gestures (jsdom has neither).
 vi.mock("react-easy-crop", async () => {
   const { useEffect } = await import("react");
   return {
-    default: ({ onCropComplete }: { onCropComplete: (area: unknown, pixels: unknown) => void }) => {
+    default: (
+      props: { onCropComplete: (area: unknown, pixels: unknown) => void } & Record<string, unknown>,
+    ) => {
+      cropperProps.current = props;
       useEffect(() => {
-        onCropComplete(FIXED_AREA, FIXED_AREA);
-      }, [onCropComplete]);
+        props.onCropComplete(FIXED_AREA, FIXED_AREA);
+      }, [props.onCropComplete]);
       return <div data-testid="cropper" />;
     },
   };
@@ -84,5 +90,20 @@ describe("CropDialog", () => {
 
     await user.click(screen.getByRole("button", { name: /keep original/i }));
     expect(onUseOriginal).toHaveBeenCalledWith(ORIGINAL);
+  });
+
+  it("restores the previous framing in re-crop mode", async () => {
+    const initial = { x: 5, y: 6, width: 40, height: 40 };
+    render(
+      <CropDialog
+        file={ORIGINAL}
+        initialAreaPixels={initial}
+        onCropped={vi.fn()}
+        onUseOriginal={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await screen.findByTestId("cropper");
+    expect(cropperProps.current?.initialCroppedAreaPixels).toEqual(initial);
   });
 });

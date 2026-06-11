@@ -1,16 +1,20 @@
 "use client";
 
-import { UploadCloud, X } from "lucide-react";
+import { Check, Crop, RotateCcw, UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { type CropAreaPixels, CropDialog } from "@/components/upload/crop-dialog";
+import { CroppedThumb } from "@/components/upload/cropped-thumb";
+import type { EagerUpload } from "@/components/upload/use-eager-uploads";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 /** A picked photo plus its duel framing. The ORIGINAL file uploads untouched;
  *  the crop rect (null = keep default framing) is applied server-side. */
 export type PickedPhoto = {
+  /** Stable client id — keys the tile, the upload state and re-crop edits. */
+  id: string;
   file: File;
   crop: CropAreaPixels | null;
 };
@@ -19,7 +23,12 @@ type ImageDropzoneProps = {
   files: PickedPhoto[];
   onChange: (files: PickedPhoto[]) => void;
   disabled?: boolean;
+  /** Eager-upload state per photo id — drives the per-tile progress/error UI. */
+  uploads?: Record<string, EagerUpload>;
+  onRetryUpload?: (photo: PickedPhoto) => void;
 };
+
+const PROGRESS_MAX = 100;
 
 function isAllowed(file: File): boolean {
   return (
@@ -27,13 +36,21 @@ function isAllowed(file: File): boolean {
   );
 }
 
-export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps) {
+export function ImageDropzone({
+  files,
+  onChange,
+  disabled,
+  uploads,
+  onRetryUpload,
+}: ImageDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
   // Newly picked files wait here for a crop decision before joining `files`.
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  // Photo being re-framed from its tile; takes the dialog over the queue.
+  const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => {
     const urls = files.map((p) => URL.createObjectURL(p.file));
@@ -70,12 +87,22 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
 
   /** Crop decision for the queue head: keep the photo with its framing. */
   function acceptPhoto(file: File, crop: CropAreaPixels | null): void {
-    onChange([...files, { file, crop }].slice(0, MAX_IMAGES_PER_CAT));
+    onChange([...files, { id: crypto.randomUUID(), file, crop }].slice(0, MAX_IMAGES_PER_CAT));
     setCropQueue((queue) => queue.slice(1));
   }
 
-  /** Dialog dismissed — the queue head is dropped entirely. */
-  function dropHead(): void {
+  /** Re-crop decision: only the rect changes — the upload is never redone. */
+  function updateCrop(id: string, crop: CropAreaPixels | null): void {
+    onChange(files.map((p) => (p.id === id ? { ...p, crop } : p)));
+    setEditId(null);
+  }
+
+  /** Dialog dismissed — drop the queue head, or just leave re-crop mode. */
+  function dismissDialog(): void {
+    if (editId !== null) {
+      setEditId(null);
+      return;
+    }
     setCropQueue((queue) => queue.slice(1));
   }
 
@@ -83,6 +110,8 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
     onChange(files.filter((_, i) => i !== index));
   }
 
+  const editTarget = editId !== null ? (files.find((p) => p.id === editId) ?? null) : null;
+  const dialogFile = editTarget?.file ?? cropQueue[0] ?? null;
   const canAddMore = files.length + cropQueue.length < MAX_IMAGES_PER_CAT && !disabled;
 
   return (
@@ -155,32 +184,92 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
 
       {files.length > 0 ? (
         <ul className="grid grid-cols-3 gap-2">
-          {files.map(({ file }, index) => {
+          {files.map((photo, index) => {
             const preview = previews[index];
+            const upload = uploads?.[photo.id];
             return (
               <li
-                key={`${file.name}-${file.size}-${file.lastModified}`}
+                key={photo.id}
                 className="group relative aspect-square overflow-hidden rounded-md border-2 border-ink bg-muted"
               >
                 {preview ? (
-                  // biome-ignore lint/performance/noImgElement: local object-URL blob preview, not a remote asset
-                  <img
+                  // The preview shows the photo THROUGH its framing — exactly
+                  // what the duel card will look like after the server crop.
+                  <CroppedThumb
                     src={preview}
-                    alt={`Preview of ${file.name}`}
-                    className="h-full w-full object-cover"
+                    crop={photo.crop}
+                    alt={`Preview of ${photo.file.name}`}
                   />
                 ) : null}
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-xs"
+                  aria-label={`Adjust crop of ${photo.file.name}`}
+                  disabled={disabled || cropQueue.length > 0}
+                  onClick={() => setEditId(photo.id)}
+                  className="absolute top-1 left-1 opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <Crop />
+                </Button>
                 <Button
                   type="button"
                   variant="destructive"
                   size="icon-xs"
-                  aria-label={`Remove ${file.name}`}
+                  aria-label={`Remove ${photo.file.name}`}
                   disabled={disabled}
                   onClick={() => removeAt(index)}
                   className="absolute top-1 right-1 opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100"
                 >
                   <X />
                 </Button>
+
+                {upload?.status === "hashing" || upload?.status === "uploading" ? (
+                  <div
+                    role="progressbar"
+                    aria-label={`Uploading ${photo.file.name}`}
+                    aria-valuemin={0}
+                    aria-valuemax={PROGRESS_MAX}
+                    aria-valuenow={upload.progress}
+                    className="absolute inset-x-0 bottom-0 h-1.5 bg-[rgba(25,23,28,.25)]"
+                  >
+                    <div
+                      className="h-full bg-primary transition-[width] duration-200"
+                      style={{ width: `${upload.progress}%` }}
+                    />
+                  </div>
+                ) : null}
+
+                {upload?.status === "uploaded" ? (
+                  <span
+                    className="absolute right-1 bottom-1 grid size-5 place-items-center rounded-full border border-ink bg-success text-success-foreground"
+                    title="Uploaded"
+                  >
+                    <Check className="size-3" strokeWidth={3} aria-hidden />
+                    <span className="sr-only">Uploaded</span>
+                  </span>
+                ) : null}
+
+                {upload?.status === "error" ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-card/90 p-2 text-center">
+                    <p className="line-clamp-2 font-medium text-destructive text-xs" role="alert">
+                      {upload.error ?? "Upload failed"}
+                    </p>
+                    {onRetryUpload ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="xs"
+                        disabled={disabled}
+                        onClick={() => onRetryUpload(photo)}
+                      >
+                        <RotateCcw aria-hidden />
+                        Retry
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             );
           })}
@@ -188,10 +277,15 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
       ) : null}
 
       <CropDialog
-        file={cropQueue[0] ?? null}
-        onCropped={acceptPhoto}
-        onUseOriginal={(file) => acceptPhoto(file, null)}
-        onCancel={dropHead}
+        file={dialogFile}
+        initialAreaPixels={editTarget?.crop ?? null}
+        onCropped={(file, crop) =>
+          editTarget ? updateCrop(editTarget.id, crop) : acceptPhoto(file, crop)
+        }
+        onUseOriginal={(file) =>
+          editTarget ? updateCrop(editTarget.id, null) : acceptPhoto(file, null)
+        }
+        onCancel={dismissDialog}
       />
     </div>
   );

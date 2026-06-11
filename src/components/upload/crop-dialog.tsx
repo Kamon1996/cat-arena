@@ -43,6 +43,8 @@ type CropDialogProps = {
   onUseOriginal: (file: File) => void;
   /** Dismissed without a decision — the file is dropped entirely. */
   onCancel: () => void;
+  /** Re-crop mode: restore this framing so the user adjusts, not restarts. */
+  initialAreaPixels?: CropAreaPixels | null;
 };
 
 /**
@@ -61,7 +63,13 @@ type CropDialogProps = {
  * override is only ever needed for objectFit="cover" (Tailwind preflight
  * conflict), which this dialog does not use.
  */
-export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDialogProps) {
+export function CropDialog({
+  file,
+  onCropped,
+  onUseOriginal,
+  onCancel,
+  initialAreaPixels,
+}: CropDialogProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(MIN_ZOOM);
@@ -136,6 +144,7 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={(_area: Area, pixels: Area) => setAreaPixels(pixels)}
+              {...(initialAreaPixels ? { initialCroppedAreaPixels: initialAreaPixels } : {})}
             />
           ) : imageUrl ? (
             // Placeholder while the dialog's open animation settles: same
