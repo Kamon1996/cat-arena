@@ -20,9 +20,27 @@ const cat: ModerationCat = {
     banned: false,
   },
   images: [
-    { id: "img_1", thumbUrl: "https://placecats.com/400/400", width: 1080, height: 1080 },
-    { id: "img_2", thumbUrl: "https://placecats.com/401/401", width: 1080, height: 1080 },
-    { id: "img_3", thumbUrl: "https://placecats.com/402/402", width: 1080, height: 1350 },
+    {
+      id: "img_1",
+      thumbUrl: "https://placecats.com/400/400",
+      fullUrl: "https://placecats.com/800/800",
+      width: 1080,
+      height: 1080,
+    },
+    {
+      id: "img_2",
+      thumbUrl: "https://placecats.com/401/401",
+      fullUrl: "https://placecats.com/802/802",
+      width: 1080,
+      height: 1080,
+    },
+    {
+      id: "img_3",
+      thumbUrl: "https://placecats.com/402/402",
+      fullUrl: "https://placecats.com/804/804",
+      width: 1080,
+      height: 1350,
+    },
   ],
 };
 

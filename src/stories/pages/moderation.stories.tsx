@@ -18,8 +18,16 @@ const initial: ModerationPage = {
         banned: false,
       },
       images: [
-        { id: "img_1", thumbUrl: "https://placecats.com/300/300" },
-        { id: "img_2", thumbUrl: "https://placecats.com/301/301" },
+        {
+          id: "img_1",
+          thumbUrl: "https://placecats.com/300/300",
+          fullUrl: "https://placecats.com/600/600",
+        },
+        {
+          id: "img_2",
+          thumbUrl: "https://placecats.com/301/301",
+          fullUrl: "https://placecats.com/602/602",
+        },
       ],
     },
     {
@@ -34,7 +42,13 @@ const initial: ModerationPage = {
         role: "MODERATOR",
         banned: false,
       },
-      images: [{ id: "img_3", thumbUrl: "https://placecats.com/302/302" }],
+      images: [
+        {
+          id: "img_3",
+          thumbUrl: "https://placecats.com/302/302",
+          fullUrl: "https://placecats.com/604/604",
+        },
+      ],
     },
   ],
   nextCursor: null,

@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 
 import { ISR_REVALIDATE_SECONDS, TOP_LEADERBOARD_LIMIT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import { publicUrl } from "@/lib/r2";
+import { thumbUrl } from "@/storage/keys";
 
 const RANK_OFFSET = 1;
 const FIRST_PAGE = 1;
@@ -71,7 +71,7 @@ export async function getLeaderboard(
           where: { status: ImageStatus.APPROVED },
           orderBy: { position: "asc" },
           take: 1,
-          select: { r2Key: true },
+          select: { id: true },
         },
       },
     }),
@@ -111,7 +111,8 @@ export async function getLeaderboard(
       rating: cat.rating,
       wins: cat.wins,
       losses: cat.losses,
-      thumbUrl: cover ? publicUrl(cover.r2Key) : null,
+      // Derived 200px variant, not the raw original (EXIF-stripped + light).
+      thumbUrl: cover ? thumbUrl(cover.id) : null,
     };
   });
 

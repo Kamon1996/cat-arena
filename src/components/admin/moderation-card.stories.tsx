@@ -17,8 +17,16 @@ const mockCat: ModerationCat = {
     banned: false,
   },
   images: [
-    { id: "img_1", thumbUrl: "https://placecats.com/300/300" },
-    { id: "img_2", thumbUrl: "https://placecats.com/301/301" },
+    {
+      id: "img_1",
+      thumbUrl: "https://placecats.com/300/300",
+      fullUrl: "https://placecats.com/600/600",
+    },
+    {
+      id: "img_2",
+      thumbUrl: "https://placecats.com/301/301",
+      fullUrl: "https://placecats.com/602/602",
+    },
   ],
 };
 

@@ -21,6 +21,7 @@ describe("ingestImage", () => {
       height: 600,
       screenBuffer: Buffer.from([1]),
       sha256: SHA256_FIXTURE,
+      crop: null,
     });
     screenMock.mockResolvedValue({ status: "APPROVED", catConfidence: 0.9 });
   });
@@ -36,7 +37,21 @@ describe("ingestImage", () => {
       status: "APPROVED",
       catConfidence: 0.9,
       sha256: SHA256_FIXTURE,
+      crop: null,
     });
+  });
+
+  it("passes through the applied (clamped) crop from processing", async () => {
+    const crop = { x: 1, y: 2, width: 30, height: 30 };
+    processMock.mockResolvedValueOnce({
+      width: 800,
+      height: 600,
+      screenBuffer: Buffer.from([1]),
+      sha256: SHA256_FIXTURE,
+      crop,
+    });
+    const result = await ingestImage("img_3", undefined, crop);
+    expect(result.crop).toEqual(crop);
   });
 
   it("passes through a PENDING screen verdict", async () => {

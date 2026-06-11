@@ -12,7 +12,11 @@ export type RejectionReason = (typeof REJECTION_REASONS)[number];
 
 export type ModerationImage = {
   id: string;
+  /** Cropped 200px tile — fast grid triage of the duel framing. */
   thumbUrl: string;
+  /** UNCROPPED 1600px variant — the full photo the public sees; what the
+   *  moderator must judge, shown by the click-to-fullscreen lightbox. */
+  fullUrl: string;
   width?: number;
   height?: number;
 };

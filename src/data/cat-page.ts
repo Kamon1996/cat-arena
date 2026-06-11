@@ -2,7 +2,7 @@ import { CatStatus, ImageStatus } from "@prisma/client";
 
 import { RECENT_DUELS_LIMIT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import { publicUrl } from "@/lib/r2";
+import { fullUrl } from "@/storage/keys";
 
 const RANK_OFFSET = 1;
 
@@ -48,7 +48,7 @@ export async function getCatPage(slug: string): Promise<CatPage | null> {
       images: {
         where: { status: ImageStatus.APPROVED },
         orderBy: { position: "asc" },
-        select: { r2Key: true, width: true, height: true, position: true },
+        select: { id: true, width: true, height: true, position: true },
       },
     },
   });
@@ -80,10 +80,11 @@ export async function getCatPage(slug: string): Promise<CatPage | null> {
     wins: cat.wins,
     losses: cat.losses,
     rank: above + RANK_OFFSET,
-    // Serve the stored r2Key (consistent with the duel + seed cats), not a
-    // derived card-key — seed cats have no card variant.
+    // full.webp = the UNCROPPED 1600px variant with EXIF stripped. Never the
+    // raw original: it carries the uploader's EXIF (incl. GPS) and was never
+    // meant to be public. All rows have the variant (backfilled 2026-06-12).
     images: cat.images.map((img) => ({
-      url: publicUrl(img.r2Key),
+      url: fullUrl(img.id),
       width: img.width,
       height: img.height,
     })),

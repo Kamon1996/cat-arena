@@ -98,14 +98,22 @@ export async function addCatImage(
   if (await isDuplicateImage([sha256OfBuffer(original)])) {
     return { ok: false, error: "duplicate_image" };
   }
-  const { width, height, status, sha256 } = await ingestImage(
-    imageId,
-    original,
-    parsedCrop ? parsedCrop.data : null,
-  );
+  const screened = await ingestImage(imageId, original, parsedCrop ? parsedCrop.data : null);
   try {
     await prisma.catImage.create({
-      data: { id: imageId, catId, r2Key, sha256, width, height, position, status },
+      data: {
+        id: imageId,
+        catId,
+        r2Key,
+        sha256: screened.sha256,
+        // The clamped rect actually applied — persisted so variants can be
+        // regenerated later without losing the framing.
+        ...(screened.crop ? { crop: screened.crop } : {}),
+        width: screened.width,
+        height: screened.height,
+        position,
+        status: screened.status,
+      },
     });
   } catch (err) {
     // Race backstop: a concurrent identical upload can pass the check above;

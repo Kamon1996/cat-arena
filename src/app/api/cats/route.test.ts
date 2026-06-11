@@ -75,6 +75,7 @@ describe("POST /api/cats", () => {
       height: 600,
       screenBuffer: Buffer.from([1]),
       sha256: hashFor(id),
+      crop: null,
     }));
     screenMock.mockResolvedValue({ status: "APPROVED", catConfidence: 0.9 });
     burstMock.mockResolvedValue({ ok: true, remaining: 9 });
@@ -152,6 +153,22 @@ describe("POST /api/cats", () => {
     const crop = { x: 10, y: 20, width: 300, height: 300 };
     await POST(req({ name: "Fluffy", images: [{ r2Key: "cats/a/original", crop }] }));
     expect(processMock).toHaveBeenCalledWith("a", expect.anything(), crop);
+  });
+
+  it("persists the applied (clamped) crop on the image row", async () => {
+    const applied = { x: 10, y: 20, width: 300, height: 300 };
+    processMock.mockImplementationOnce(async (id: string) => ({
+      width: 800,
+      height: 600,
+      screenBuffer: Buffer.from([1]),
+      sha256: hashFor(id),
+      crop: applied,
+    }));
+    await POST(req({ name: "Fluffy", images: [{ r2Key: "cats/a/original", crop: applied }] }));
+    const createArgs = catCreate.mock.calls[0]?.[0] as {
+      data: { images: { create: Array<{ crop?: unknown }> } };
+    };
+    expect(createArgs.data.images.create[0]?.crop).toEqual(applied);
   });
 
   it("rejects a malformed crop rect", async () => {

@@ -12,6 +12,8 @@ export type ScreenedImage = {
   catConfidence: number;
   /** SHA-256 hex of the original bytes — the duplicate-detection key. */
   sha256: string;
+  /** The framing actually applied to thumb/card (clamped); null = uncropped. */
+  crop: CropRect | null;
 };
 
 /**
@@ -26,7 +28,14 @@ export async function ingestImage(
   prefetched?: Buffer,
   crop?: CropRect | null,
 ): Promise<ScreenedImage> {
-  const { width, height, screenBuffer, sha256 } = await processImage(imageId, prefetched, crop);
-  const { status, catConfidence } = await screenImage(screenBuffer);
-  return { width, height, status, catConfidence, sha256 };
+  const processed = await processImage(imageId, prefetched, crop);
+  const { status, catConfidence } = await screenImage(processed.screenBuffer);
+  return {
+    width: processed.width,
+    height: processed.height,
+    status,
+    catConfidence,
+    sha256: processed.sha256,
+    crop: processed.crop,
+  };
 }

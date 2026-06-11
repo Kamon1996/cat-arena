@@ -4,9 +4,27 @@ import { ModerationPhotoGrid } from "@/components/admin/moderation-photo-grid";
 import type { ModerationImage } from "@/moderation/moderation-types";
 
 const IMAGES: ModerationImage[] = [
-  { id: "1", thumbUrl: "https://placecats.com/400/400", width: 1080, height: 1080 },
-  { id: "2", thumbUrl: "https://placecats.com/420/520", width: 1080, height: 1350 },
-  { id: "3", thumbUrl: "https://placecats.com/410/410", width: 1080, height: 1080 },
+  {
+    id: "1",
+    thumbUrl: "https://placecats.com/400/400",
+    fullUrl: "https://placecats.com/800/800",
+    width: 1080,
+    height: 1080,
+  },
+  {
+    id: "2",
+    thumbUrl: "https://placecats.com/420/520",
+    fullUrl: "https://placecats.com/840/1040",
+    width: 1080,
+    height: 1350,
+  },
+  {
+    id: "3",
+    thumbUrl: "https://placecats.com/410/410",
+    fullUrl: "https://placecats.com/820/820",
+    width: 1080,
+    height: 1080,
+  },
 ];
 
 const meta = {

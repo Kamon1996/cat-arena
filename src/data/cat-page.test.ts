@@ -45,7 +45,7 @@ describe("getCatPage", () => {
     expect(await getCatPage("fluffy-1")).toBeNull();
   });
 
-  it("maps APPROVED images via r2Key, computes rank, and lists recent duels", async () => {
+  it("maps APPROVED images to the uncropped full variant, computes rank, and lists recent duels", async () => {
     findUnique.mockResolvedValue({
       id: "ca",
       name: "Fluffy",
@@ -57,8 +57,8 @@ describe("getCatPage", () => {
       losses: 4,
       score: 1440,
       images: [
-        { r2Key: "seed/fluffy.webp", width: 800, height: 600, position: 0 },
-        { r2Key: "cats/img2/original", width: 800, height: 600, position: 1 },
+        { id: "img1", width: 800, height: 600, position: 0 },
+        { id: "img2", width: 800, height: 600, position: 1 },
       ],
     });
     count.mockResolvedValue(7); // 7 cats above → rank 8
@@ -67,7 +67,8 @@ describe("getCatPage", () => {
     const page = await getCatPage("fluffy-1");
     expect(page?.name).toBe("Fluffy");
     expect(page?.rank).toBe(8);
-    expect(page?.images[0]?.url).toBe("https://cdn.test/seed/fluffy.webp");
+    // full.webp (EXIF-stripped, uncropped) — never the raw original.
+    expect(page?.images[0]?.url).toBe("https://cdn.test/cats/img1/full.webp");
     expect(page?.recentDuels).toHaveLength(1);
     expect(page?.recentDuels[0]?.won).toBe(true);
     expect(page?.wins).toBe(12);

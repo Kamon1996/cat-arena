@@ -4,7 +4,7 @@ import { requireModerator } from "@/auth/guards";
 import { MODERATION_PAGE_SIZE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import type { ModerationPage } from "@/moderation/moderation-types";
-import { thumbUrl } from "@/storage/keys";
+import { fullUrl, thumbUrl } from "@/storage/keys";
 
 export async function getModerationCats(cursor?: string): Promise<ModerationPage> {
   await requireModerator();
@@ -43,6 +43,7 @@ export async function getModerationCats(cursor?: string): Promise<ModerationPage
       images: cat.images.map((img) => ({
         id: img.id,
         thumbUrl: thumbUrl(img.id),
+        fullUrl: fullUrl(img.id),
         width: img.width,
         height: img.height,
       })),

@@ -84,6 +84,7 @@ describe("owner-actions", () => {
       status: "PENDING",
       catConfidence: 0.1,
       sha256: SHA256_FIXTURE,
+      crop: null,
     });
     dedupeMock.mockResolvedValue(false);
     violationMock.mockReturnValue(false);
@@ -139,6 +140,22 @@ describe("owner-actions", () => {
           status: "PENDING",
         },
       });
+    });
+    it("persists the applied framing crop returned by ingest", async () => {
+      const crop = { x: 1, y: 2, width: 30, height: 30 };
+      ingestMock.mockResolvedValueOnce({
+        width: 800,
+        height: 600,
+        status: "PENDING",
+        catConfidence: 0.1,
+        sha256: SHA256_FIXTURE,
+        crop,
+      });
+      const res = await addCatImage("cat_1", "cats/img_new/original", crop);
+      expect(res).toEqual({ ok: true });
+      expect(imageCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ crop }) }),
+      );
     });
     it("refuses a photo whose hash is already stored, before any processing", async () => {
       dedupeMock.mockResolvedValueOnce(true);

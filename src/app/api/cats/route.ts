@@ -113,20 +113,19 @@ export async function POST(request: Request): Promise<Response> {
     // Process + screen each image OUTSIDE any DB transaction (heavy I/O).
     const processed = await Promise.all(
       originals.map(async (o) => {
-        const { width, height, status, catConfidence, sha256 } = await ingestImage(
-          o.id,
-          o.original,
-          o.crop,
-        );
+        const screened = await ingestImage(o.id, o.original, o.crop);
         return {
           id: o.id,
           r2Key: o.r2Key,
-          width,
-          height,
+          width: screened.width,
+          height: screened.height,
           position: o.position,
-          status,
-          catConfidence,
-          sha256,
+          status: screened.status,
+          catConfidence: screened.catConfidence,
+          sha256: screened.sha256,
+          // The clamped rect actually applied — persisted so variants can be
+          // regenerated later (e.g. a new size) without losing the framing.
+          crop: screened.crop,
         };
       }),
     );
@@ -142,6 +141,7 @@ export async function POST(request: Request): Promise<Response> {
             id: p.id,
             r2Key: p.r2Key,
             sha256: p.sha256,
+            ...(p.crop ? { crop: p.crop } : {}),
             width: p.width,
             height: p.height,
             position: p.position,

@@ -23,7 +23,7 @@ import { getLeaderboard } from "@/data/leaderboard";
 
 const DEFAULT_PAGE_SIZE = 100;
 
-function row(id: string, score: number, images: { r2Key: string }[] = []) {
+function row(id: string, score: number, images: { id: string }[] = []) {
   return { id, name: id.toUpperCase(), slug: id, score, rating: 1500, wins: 0, losses: 0, images };
 }
 
@@ -32,9 +32,9 @@ describe("getLeaderboard", () => {
     vi.clearAllMocks();
   });
 
-  it("queries ACTIVE cats by score desc with page-1 offset and resolves the cover via r2Key", async () => {
+  it("queries ACTIVE cats by score desc with page-1 offset and resolves the cover thumb variant", async () => {
     count.mockResolvedValue(2);
-    findMany.mockResolvedValue([row("a", 100, [{ r2Key: "a.webp" }]), row("b", 90, [])]);
+    findMany.mockResolvedValue([row("a", 100, [{ id: "img-a" }]), row("b", 90, [])]);
 
     const { rows, page, pageSize, total, pageCount } = await getLeaderboard();
 
@@ -46,7 +46,7 @@ describe("getLeaderboard", () => {
         take: DEFAULT_PAGE_SIZE,
       }),
     );
-    expect(rows[0]?.thumbUrl).toBe("https://cdn.test/a.webp");
+    expect(rows[0]?.thumbUrl).toBe("https://cdn.test/cats/img-a/thumb.webp");
     expect(rows[1]?.thumbUrl).toBeNull();
     expect({ page, pageSize, total, pageCount }).toEqual({
       page: 1,

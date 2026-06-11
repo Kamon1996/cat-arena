@@ -21,10 +21,12 @@ export type CropRect = {
 export type ProcessedImage = {
   width: number; // intrinsic width of the (rotation-baked) original
   height: number;
-  /** The decoded, EXIF-stripped duel-crop WebP buffer — reused by the NSFW screen. */
+  /** EXIF-stripped JPEG of the FULL (uncropped) photo — what moderation screens. */
   screenBuffer: Buffer;
   /** SHA-256 hex of the original bytes as uploaded — the duplicate-detection key. */
   sha256: string;
+  /** The framing actually applied to thumb/card (clamped); null = uncropped. */
+  crop: CropRect | null;
 };
 
 /** Download the uploaded original from R2 into memory. */
@@ -52,7 +54,9 @@ async function putWebp(key: string, body: Buffer): Promise<void> {
   );
 }
 
-/** Clamp a client-supplied crop to the image bounds; null when unusable. */
+/** Intersect a client-supplied crop with the image bounds; null when the
+ *  intersection is empty — a wild rect falls back to "no crop" instead of
+ *  snapping to a 1px sliver at the nearest edge. */
 function clampCrop(
   crop: CropRect | null | undefined,
   width: number,
@@ -61,14 +65,14 @@ function clampCrop(
   if (!crop || width <= 0 || height <= 0) {
     return null;
   }
-  const left = Math.min(Math.max(Math.round(crop.x), 0), width - 1);
-  const top = Math.min(Math.max(Math.round(crop.y), 0), height - 1);
-  const w = Math.min(Math.round(crop.width), width - left);
-  const h = Math.min(Math.round(crop.height), height - top);
-  if (w < 1 || h < 1) {
+  const left = Math.max(Math.round(crop.x), 0);
+  const top = Math.max(Math.round(crop.y), 0);
+  const right = Math.min(Math.round(crop.x + crop.width), width);
+  const bottom = Math.min(Math.round(crop.y + crop.height), height);
+  if (right - left < 1 || bottom - top < 1) {
     return null;
   }
-  return { x: left, y: top, width: w, height: h };
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
 /**
@@ -76,9 +80,10 @@ function clampCrop(
  * rotation, strip metadata, and write the WebP variants back to R2:
  * - thumb (200) and card (800) from the user's crop (when given) — what duels show;
  * - full (1600, ALWAYS uncropped) — what lightboxes show, the photo as shot.
- * Returns the uncropped intrinsic dimensions plus a decoded buffer of the
- * duel framing reused for NSFW screening. Callers that need the hash BEFORE
- * this heavy work (the dedupe check) fetch the buffer themselves and pass it in.
+ * Returns the uncropped intrinsic dimensions, the applied (clamped) framing,
+ * and a JPEG of the FULL photo for moderation screening. Callers that need the
+ * hash BEFORE this heavy work (the dedupe check) fetch the buffer themselves
+ * and pass it in.
  */
 export async function processImage(
   imageId: string,
@@ -90,11 +95,13 @@ export async function processImage(
   // what the client can compute locally before uploading.
   const sha256 = sha256OfBuffer(original);
 
-  // Decode once, bake orientation (Node sharp does not auto-rotate on read).
-  const base = sharp(original).rotate();
-  const meta = await base.metadata();
-  const width = meta.width ?? 0;
-  const height = meta.height ?? 0;
+  // metadata() reads the file header and IGNORES the operation pipeline, so a
+  // queued .rotate() does not affect it. Use the orientation-adjusted dims:
+  // that is the space the browser displays — and the space the crop arrives in.
+  // (A portrait phone JPEG stores landscape pixels + EXIF orientation 5–8.)
+  const meta = await sharp(original).metadata();
+  const width = meta.autoOrient.width ?? 0;
+  const height = meta.autoOrient.height ?? 0;
 
   // The crop arrives in coordinates of the rotation-baked image (that is what
   // the browser shows the user), so extract AFTER rotate().
@@ -132,9 +139,11 @@ export async function processImage(
   await putWebp(cardKey(imageId), card);
   await putWebp(fullKey(imageId), full);
 
-  // Workers AI nsfw_image_detection + resnet-50 expect JPEG, not WebP. Screen
-  // the duel framing — that is what voters will actually see.
-  const screenBuffer = await framed()
+  // Workers AI models expect JPEG, not WebP. Screen the FULL photo, not the
+  // duel crop: the uncropped image is what goes public (cat page, lightbox),
+  // and the crop is a subset of it anyway.
+  const screenBuffer = await sharp(original)
+    .rotate()
     .resize(IMAGE_SIZE.CARD, IMAGE_SIZE.CARD, { fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 85 })
     .toBuffer();
@@ -144,5 +153,6 @@ export async function processImage(
     height,
     screenBuffer,
     sha256,
+    crop: framing,
   };
 }

@@ -25,7 +25,9 @@ const CAT: ModerationCat = {
   status: "PENDING",
   createdAt: "2026-06-04T12:00:00.000Z",
   owner: { id: "u1", name: "Aiko", email: "aiko@cats.io", role: "USER", banned: false },
-  images: [{ id: "i1", thumbUrl: "/thumb.webp", width: 1080, height: 1080 }],
+  images: [
+    { id: "i1", thumbUrl: "/thumb.webp", fullUrl: "/thumb.webp", width: 1080, height: 1080 },
+  ],
 };
 
 function renderRow(onResolved = vi.fn()) {
