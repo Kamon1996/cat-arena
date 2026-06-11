@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { catToast } from "@/components/ui/cat-toast";
-import { CropDialog } from "@/components/upload/crop-dialog";
+import { type CropAreaPixels, CropDialog } from "@/components/upload/crop-dialog";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -93,7 +93,7 @@ export function CatCard({ cat }: { cat: CatCardData }) {
    * order that dodges both guards — at the photo cap, delete-then-add (no
    * image_limit); below it, add-then-delete (no last_image on a 1-photo cat).
    */
-  async function replaceImage(file: File): Promise<void> {
+  async function replaceImage(file: File, crop: CropAreaPixels | null): Promise<void> {
     const oldId = replaceTargetRef.current;
     if (!oldId) {
       return;
@@ -106,12 +106,12 @@ export function CatCard({ cat }: { cat: CatCardData }) {
         if (!removed.ok) {
           throw new Error(removed.error);
         }
-        const added = await addCatImage(cat.id, r2Key);
+        const added = await addCatImage(cat.id, r2Key, crop);
         if (!added.ok) {
           throw new Error(added.error);
         }
       } else {
-        const added = await addCatImage(cat.id, r2Key);
+        const added = await addCatImage(cat.id, r2Key, crop);
         if (!added.ok) {
           throw new Error(added.error);
         }
@@ -252,13 +252,13 @@ export function CatCard({ cat }: { cat: CatCardData }) {
       />
       <CropDialog
         file={replaceCropFile}
-        onCropped={(file) => {
+        onCropped={(file, crop) => {
           setReplaceCropFile(null);
-          void replaceImage(file);
+          void replaceImage(file, crop);
         }}
         onUseOriginal={(file) => {
           setReplaceCropFile(null);
-          void replaceImage(file);
+          void replaceImage(file, null);
         }}
         onCancel={() => {
           setReplaceCropFile(null);

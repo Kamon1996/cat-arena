@@ -8,7 +8,7 @@ import { CatCard } from "@/components/dashboard/cat-card";
 import { Button } from "@/components/ui/button";
 import { MAX_CATS_PER_USER } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import { cardUrl, thumbUrl } from "@/storage/keys";
+import { fullUrl, thumbUrl } from "@/storage/keys";
 
 const ACTIVE_STATUS = "ACTIVE";
 
@@ -63,8 +63,8 @@ export default async function DashboardPage() {
           width: image.width,
           height: image.height,
           thumbUrl: thumbUrl(image.id),
-          // The lightbox shows the 800px card variant — plenty for a polaroid frame.
-          fullUrl: cardUrl(image.id),
+          // The lightbox shows the UNCROPPED 1600px variant — the photo as shot.
+          fullUrl: fullUrl(image.id),
         })),
       };
     }),

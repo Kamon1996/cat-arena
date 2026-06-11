@@ -4,13 +4,20 @@ import { UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { CropDialog } from "@/components/upload/crop-dialog";
+import { type CropAreaPixels, CropDialog } from "@/components/upload/crop-dialog";
 import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
+/** A picked photo plus its duel framing. The ORIGINAL file uploads untouched;
+ *  the crop rect (null = keep default framing) is applied server-side. */
+export type PickedPhoto = {
+  file: File;
+  crop: CropAreaPixels | null;
+};
+
 type ImageDropzoneProps = {
-  files: File[];
-  onChange: (files: File[]) => void;
+  files: PickedPhoto[];
+  onChange: (files: PickedPhoto[]) => void;
   disabled?: boolean;
 };
 
@@ -29,7 +36,7 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
   const [cropQueue, setCropQueue] = useState<File[]>([]);
 
   useEffect(() => {
-    const urls = files.map((f) => URL.createObjectURL(f));
+    const urls = files.map((p) => URL.createObjectURL(p.file));
     setPreviews(urls);
     return () => {
       for (const url of urls) {
@@ -46,7 +53,7 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
     // photos anyway (after uploading them), and identical files would collide
     // on the name-size-lastModified preview key below.
     const fileKey = (f: File) => `${f.name}-${f.size}-${f.lastModified}`;
-    const present = new Set([...files, ...cropQueue].map(fileKey));
+    const present = new Set([...files.map((p) => p.file), ...cropQueue].map(fileKey));
     const remaining = MAX_IMAGES_PER_CAT - files.length - cropQueue.length;
     const accepted = Array.from(incoming)
       .filter((f) => {
@@ -61,11 +68,14 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
     setCropQueue((queue) => [...queue, ...accepted]);
   }
 
-  /** A crop decision for the queue head: the file to keep, or null to drop it. */
-  function resolveCrop(result: File | null): void {
-    if (result) {
-      onChange([...files, result].slice(0, MAX_IMAGES_PER_CAT));
-    }
+  /** Crop decision for the queue head: keep the photo with its framing. */
+  function acceptPhoto(file: File, crop: CropAreaPixels | null): void {
+    onChange([...files, { file, crop }].slice(0, MAX_IMAGES_PER_CAT));
+    setCropQueue((queue) => queue.slice(1));
+  }
+
+  /** Dialog dismissed — the queue head is dropped entirely. */
+  function dropHead(): void {
     setCropQueue((queue) => queue.slice(1));
   }
 
@@ -145,7 +155,7 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
 
       {files.length > 0 ? (
         <ul className="grid grid-cols-3 gap-2">
-          {files.map((file, index) => {
+          {files.map(({ file }, index) => {
             const preview = previews[index];
             return (
               <li
@@ -179,9 +189,9 @@ export function ImageDropzone({ files, onChange, disabled }: ImageDropzoneProps)
 
       <CropDialog
         file={cropQueue[0] ?? null}
-        onCropped={resolveCrop}
-        onUseOriginal={resolveCrop}
-        onCancel={() => resolveCrop(null)}
+        onCropped={acceptPhoto}
+        onUseOriginal={(file) => acceptPhoto(file, null)}
+        onCancel={dropHead}
       />
     </div>
   );

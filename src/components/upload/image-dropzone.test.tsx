@@ -5,6 +5,8 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 // Stub crop dialog: visible whenever a file awaits a decision, with buttons
 // that resolve the queue head the three possible ways.
+const STUB_AREA = { x: 1, y: 2, width: 30, height: 30 };
+
 vi.mock("@/components/upload/crop-dialog", () => ({
   CropDialog: ({
     file,
@@ -13,14 +15,14 @@ vi.mock("@/components/upload/crop-dialog", () => ({
     onCancel,
   }: {
     file: File | null;
-    onCropped: (f: File) => void;
+    onCropped: (f: File, crop: typeof STUB_AREA) => void;
     onUseOriginal: (f: File) => void;
     onCancel: () => void;
   }) =>
     file ? (
       <div data-testid="crop-dialog">
         <span data-testid="crop-file-name">{file.name}</span>
-        <button type="button" onClick={() => onCropped(file)}>
+        <button type="button" onClick={() => onCropped(file, STUB_AREA)}>
           stub-crop
         </button>
         <button type="button" onClick={() => onUseOriginal(file)}>
@@ -33,15 +35,23 @@ vi.mock("@/components/upload/crop-dialog", () => ({
     ) : null,
 }));
 
-import { ImageDropzone } from "./image-dropzone";
+import { ImageDropzone, type PickedPhoto } from "./image-dropzone";
 
 function pngFile(name: string): File {
   return new File(["bytes"], name, { type: "image/png" });
 }
 
-function Harness() {
-  const [files, setFiles] = useState<File[]>([]);
-  return <ImageDropzone files={files} onChange={setFiles} />;
+function Harness({ onPick }: { onPick?: (photos: PickedPhoto[]) => void }) {
+  const [files, setFiles] = useState<PickedPhoto[]>([]);
+  return (
+    <ImageDropzone
+      files={files}
+      onChange={(next) => {
+        onPick?.(next);
+        setFiles(next);
+      }}
+    />
+  );
 }
 
 function pickFiles(container: HTMLElement, files: File[]): void {

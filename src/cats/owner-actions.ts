@@ -10,8 +10,8 @@ import { deleteObjects } from "@/lib/r2";
 import { checkUploadBurst } from "@/lib/rate-limit";
 import { isDuplicateImage, isSha256UniqueViolation } from "@/storage/image-dedupe";
 import { ingestImage } from "@/storage/ingest-image";
-import { cardKey, originalKey, thumbKey } from "@/storage/keys";
-import { fetchOriginal, sha256OfBuffer } from "@/storage/process-image";
+import { cardKey, fullKey, originalKey, thumbKey } from "@/storage/keys";
+import { type CropRect, fetchOriginal, sha256OfBuffer } from "@/storage/process-image";
 
 export type OwnerActionResult = { ok: true } | { ok: false; error: string };
 
@@ -21,10 +21,18 @@ const MAX_NAME = 60;
 const NameSchema = z.string().trim().min(MIN_NAME).max(MAX_NAME);
 const ORIGINAL_KEY = /^cats\/([^/]+)\/original$/;
 
-/** All three R2 objects (original + derived variants) for one image id. */
+/** All R2 objects (original + derived variants) for one image id. */
 function imageObjectKeys(imageId: string): string[] {
-  return [originalKey(imageId), thumbKey(imageId), cardKey(imageId)];
+  return [originalKey(imageId), thumbKey(imageId), cardKey(imageId), fullKey(imageId)];
 }
+
+// Duel-framing crop from the client; processImage clamps it to image bounds.
+const CropInputSchema = z.object({
+  x: z.number().int().min(0),
+  y: z.number().int().min(0),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
 
 export async function renameCat(catId: string, name: string): Promise<OwnerActionResult> {
   const owned = await requireOwnedCat(catId);
@@ -47,7 +55,11 @@ export async function renameCat(catId: string, name: string): Promise<OwnerActio
   return { ok: true };
 }
 
-export async function addCatImage(catId: string, r2Key: string): Promise<OwnerActionResult> {
+export async function addCatImage(
+  catId: string,
+  r2Key: string,
+  crop?: CropRect | null,
+): Promise<OwnerActionResult> {
   const owned = await requireOwnedCat(catId);
   if (!owned.ok) {
     return { ok: false, error: owned.error };
@@ -58,6 +70,11 @@ export async function addCatImage(catId: string, r2Key: string): Promise<OwnerAc
   const imageId = ORIGINAL_KEY.exec(r2Key)?.[1];
   if (!imageId) {
     return { ok: false, error: "invalid_key" };
+  }
+  // Server action = public endpoint: validate the crop shape at the boundary.
+  const parsedCrop = crop == null ? null : CropInputSchema.safeParse(crop);
+  if (parsedCrop && !parsedCrop.success) {
+    return { ok: false, error: "invalid_crop" };
   }
   const existing = await prisma.catImage.findMany({
     where: { catId },
@@ -81,7 +98,11 @@ export async function addCatImage(catId: string, r2Key: string): Promise<OwnerAc
   if (await isDuplicateImage([sha256OfBuffer(original)])) {
     return { ok: false, error: "duplicate_image" };
   }
-  const { width, height, status, sha256 } = await ingestImage(imageId, original);
+  const { width, height, status, sha256 } = await ingestImage(
+    imageId,
+    original,
+    parsedCrop ? parsedCrop.data : null,
+  );
   try {
     await prisma.catImage.create({
       data: { id: imageId, catId, r2Key, sha256, width, height, position, status },

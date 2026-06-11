@@ -3,7 +3,7 @@ import "server-only";
 import { ORPHAN_GRACE_HOURS, ORPHAN_SCAN_LIMIT } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { deleteObjects, listKeys } from "@/lib/r2";
-import { cardKey, originalKey, thumbKey } from "@/storage/keys";
+import { cardKey, fullKey, originalKey, thumbKey } from "@/storage/keys";
 
 const MS_PER_HOUR = 3_600_000;
 const CATS_PREFIX = "cats/";
@@ -47,7 +47,12 @@ export async function cleanupOrphanImages(now = new Date()): Promise<CleanupResu
   const existingIds = new Set(existing.map((row) => row.id));
   const orphanIds = candidateIds.filter((id) => !existingIds.has(id));
 
-  const keysToDelete = orphanIds.flatMap((id) => [originalKey(id), thumbKey(id), cardKey(id)]);
+  const keysToDelete = orphanIds.flatMap((id) => [
+    originalKey(id),
+    thumbKey(id),
+    cardKey(id),
+    fullKey(id),
+  ]);
   await deleteObjects(keysToDelete);
 
   return { scanned: objects.length, deletedImages: orphanIds.length };

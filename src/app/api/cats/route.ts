@@ -18,10 +18,19 @@ const MIN_NAME = 1;
 const MAX_NAME = 60;
 const ORIGINAL_KEY = /^cats\/([^/]+)\/original$/;
 
+// User-chosen duel framing, in pixels of the rotated original. Server-side
+// processImage clamps it to the image bounds, so loose ints suffice here.
+const CropSchema = z.object({
+  x: z.number().int().min(0),
+  y: z.number().int().min(0),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+
 const BodySchema = z.object({
   name: z.string().trim().min(MIN_NAME).max(MAX_NAME),
   images: z
-    .array(z.object({ r2Key: z.string().regex(ORIGINAL_KEY) }))
+    .array(z.object({ r2Key: z.string().regex(ORIGINAL_KEY), crop: CropSchema.optional() }))
     .min(1)
     .max(MAX_IMAGES_PER_CAT),
   // Accepted for forward-compat; org-join via joinCode is deferred to phase 07.
@@ -77,6 +86,7 @@ export async function POST(request: Request): Promise<Response> {
         return {
           id,
           r2Key: img.r2Key,
+          crop: img.crop ?? null,
           position: index,
           original,
           sha256: sha256OfBuffer(original),
@@ -106,6 +116,7 @@ export async function POST(request: Request): Promise<Response> {
         const { width, height, status, catConfidence, sha256 } = await ingestImage(
           o.id,
           o.original,
+          o.crop,
         );
         return {
           id: o.id,

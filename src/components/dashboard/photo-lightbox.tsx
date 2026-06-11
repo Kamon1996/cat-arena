@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { PHOTO_STATUS_LABEL, PHOTO_STATUS_TEXT_CLASS } from "@/components/dashboard/polaroid-print";
 import { cn } from "@/lib/utils";
@@ -46,9 +46,21 @@ const NAV_BUTTON_CLASS = cn(
  */
 export function PhotoLightbox({ catName, photos, openIndex, onClose }: PhotoLightboxProps) {
   const [index, setIndex] = useState(FIRST_INDEX);
-  // URL of the last fully-loaded original: comparing against the CURRENT photo
-  // derives "loaded" without an effect, so flipping resets it synchronously.
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  // EVERY original that has finished loading this session. Once a photo is in
+  // here, flipping back to it renders the original instantly — no blur-up
+  // placeholder, no fade replay.
+  const [loadedUrls, setLoadedUrls] = useState<ReadonlySet<string>>(new Set());
+
+  const markLoaded = useCallback((url: string) => {
+    setLoadedUrls((prev) => {
+      if (prev.has(url)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (openIndex !== null) {
@@ -64,7 +76,8 @@ export function PhotoLightbox({ catName, photos, openIndex, onClose }: PhotoLigh
     setIndex((current) => (current + delta + photos.length) % photos.length);
   };
 
-  // Warm the neighbours so flipping shows the original, not the blur-up.
+  // Warm the neighbours so flipping shows the original, not the blur-up; once
+  // a prefetch finishes, that photo is "loaded" too and skips the blur phase.
   useEffect(() => {
     if (!open || photos.length <= SINGLE) {
       return;
@@ -72,16 +85,18 @@ export function PhotoLightbox({ catName, photos, openIndex, onClose }: PhotoLigh
     for (const delta of [-1, 1]) {
       const neighbour = photos[(index + delta + photos.length) % photos.length];
       if (neighbour) {
-        new Image().src = neighbour.url;
+        const img = new Image();
+        img.onload = () => markLoaded(neighbour.url);
+        img.src = neighbour.url;
       }
     }
-  }, [open, index, photos]);
+  }, [open, index, photos, markLoaded]);
 
   if (!photo) {
     return null;
   }
 
-  const loaded = loadedUrl === photo.url;
+  const loaded = loadedUrls.has(photo.url);
 
   const statusKey =
     photo.status === undefined
@@ -177,7 +192,10 @@ export function PhotoLightbox({ catName, photos, openIndex, onClose }: PhotoLigh
                     }))`,
                   }}
                 >
-                  {photo.thumbUrl ? (
+                  {/* The blur placeholder mounts ONLY while this original has
+                      never finished loading — once seen, flips render the
+                      original instantly with no blur frame and no fade. */}
+                  {!loaded && photo.thumbUrl ? (
                     // biome-ignore lint/performance/noImgElement: cached CDN thumb as blur-up placeholder
                     <img
                       src={photo.thumbUrl}
@@ -186,17 +204,16 @@ export function PhotoLightbox({ catName, photos, openIndex, onClose }: PhotoLigh
                       className="absolute inset-0 size-full scale-110 object-cover blur-md"
                     />
                   ) : null}
-                  {/* key remounts per photo so the fade replays on every flip */}
                   {/* biome-ignore lint/performance/noImgElement: R2/CDN original in a lightbox */}
                   <img
                     key={photo.url}
                     src={photo.url}
                     alt={`${catName} — ${index + 1} of ${photos.length}`}
-                    onLoad={() => setLoadedUrl(photo.url)}
+                    onLoad={() => markLoaded(photo.url)}
                     ref={(img) => {
                       // Cached originals can complete before React attaches onLoad.
                       if (img?.complete && img.naturalWidth > 0) {
-                        setLoadedUrl(photo.url);
+                        markLoaded(photo.url);
                       }
                     }}
                     className={cn(

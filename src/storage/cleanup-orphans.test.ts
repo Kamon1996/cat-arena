@@ -45,6 +45,7 @@ describe("cleanupOrphanImages", () => {
       "cats/orphan/original",
       "cats/orphan/thumb.webp",
       "cats/orphan/card.webp",
+      "cats/orphan/full.webp",
     ]);
     expect(result).toEqual({ scanned: 4, deletedImages: 1 });
   });

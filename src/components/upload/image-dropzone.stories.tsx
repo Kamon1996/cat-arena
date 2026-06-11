@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useState } from "react";
 import { fn } from "storybook/test";
 
-import { ImageDropzone } from "@/components/upload/image-dropzone";
+import { ImageDropzone, type PickedPhoto } from "@/components/upload/image-dropzone";
 
 const meta = {
   title: "Upload/ImageDropzone",
@@ -11,7 +11,7 @@ const meta = {
   parameters: { layout: "centered" },
   args: { files: [], onChange: fn(), disabled: false },
   render: (args) => {
-    const [files, setFiles] = useState<File[]>(args.files);
+    const [files, setFiles] = useState<PickedPhoto[]>(args.files);
     return (
       <div className="w-96">
         <ImageDropzone

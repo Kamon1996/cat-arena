@@ -126,7 +126,7 @@ describe("owner-actions", () => {
       const res = await addCatImage("cat_1", "cats/img_new/original");
       expect(res).toEqual({ ok: true });
       // The original is fetched once (for the hash) and reused for processing.
-      expect(ingestMock).toHaveBeenCalledWith("img_new", Buffer.from([1]));
+      expect(ingestMock).toHaveBeenCalledWith("img_new", Buffer.from([1]), null);
       expect(imageCreate).toHaveBeenCalledWith({
         data: {
           id: "img_new",
@@ -201,6 +201,7 @@ describe("owner-actions", () => {
         "cats/img_1/original",
         "cats/img_1/thumb.webp",
         "cats/img_1/card.webp",
+        "cats/img_1/full.webp",
       ]);
     });
     it("returns not_found when the image is missing", async () => {
@@ -227,9 +228,11 @@ describe("owner-actions", () => {
         "cats/a/original",
         "cats/a/thumb.webp",
         "cats/a/card.webp",
+        "cats/a/full.webp",
         "cats/b/original",
         "cats/b/thumb.webp",
         "cats/b/card.webp",
+        "cats/b/full.webp",
       ]);
     });
   });

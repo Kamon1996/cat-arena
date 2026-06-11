@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 
 import { addCatImage } from "@/cats/owner-actions";
 import { catToast } from "@/components/ui/cat-toast";
-import { CropDialog } from "@/components/upload/crop-dialog";
+import { type CropAreaPixels, CropDialog } from "@/components/upload/crop-dialog";
 import { uploadToR2 } from "@/components/upload/upload-to-r2";
 import { ALLOWED_UPLOAD_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -52,11 +52,11 @@ export function AddImage({ catId, remaining, disabled, slotIndex = 0 }: AddImage
     }
   }
 
-  async function uploadOne(file: File): Promise<void> {
+  async function uploadOne(file: File, crop: CropAreaPixels | null): Promise<void> {
     setBusy(true);
     try {
       const { r2Key } = await uploadToR2(file);
-      const result = await addCatImage(catId, r2Key);
+      const result = await addCatImage(catId, r2Key, crop);
       if (!result.ok) {
         throw new Error(result.error);
       }
@@ -75,12 +75,10 @@ export function AddImage({ catId, remaining, disabled, slotIndex = 0 }: AddImage
     }
   }
 
-  /** Crop decision for the queue head: upload the kept file, or drop it. */
-  function resolveCrop(file: File | null): void {
+  /** Crop decision for the queue head: upload the original with its framing. */
+  function acceptPhoto(file: File, crop: CropAreaPixels | null): void {
     setCropQueue((queue) => queue.slice(1));
-    if (file) {
-      void uploadOne(file);
-    }
+    void uploadOne(file, crop);
   }
 
   // Empty polaroid slot on the scrapbook board: dashed print waiting for a
@@ -134,9 +132,9 @@ export function AddImage({ catId, remaining, disabled, slotIndex = 0 }: AddImage
       />
       <CropDialog
         file={cropQueue[0] ?? null}
-        onCropped={resolveCrop}
-        onUseOriginal={resolveCrop}
-        onCancel={() => resolveCrop(null)}
+        onCropped={acceptPhoto}
+        onUseOriginal={(file) => acceptPhoto(file, null)}
+        onCancel={() => setCropQueue((queue) => queue.slice(1))}
       />
     </label>
   );

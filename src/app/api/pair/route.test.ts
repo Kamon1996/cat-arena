@@ -50,7 +50,7 @@ function mockLoadableCats() {
     id: where.id,
     name: where.id === "ca" ? "Alpha" : "Bravo",
     slug: `${where.id}-slug`,
-    images: [{ r2Key: `${where.id}/orig`, width: 800, height: 600, position: 0 }],
+    images: [{ id: `img-${where.id}`, width: 800, height: 600, position: 0 }],
   }));
 }
 
@@ -97,7 +97,8 @@ describe("GET /api/pair", () => {
     expect(body.pairs[0].token).toBe("signed-token");
     expect(body.pairs[0].expiresAt).toBeGreaterThan(Date.now());
     expect(body.pairs[0].a.name).toBe("Alpha");
-    expect(body.pairs[0].a.images[0].url).toBe("https://cdn.test/ca/orig");
+    // Duels serve the card variant (the owner's framing), not the raw original.
+    expect(body.pairs[0].a.images[0].url).toBe("https://cdn.test/cats/img-ca/card.webp");
     expect(body.pairs[0].b.id).toBe("cb");
   });
 
@@ -143,7 +144,7 @@ describe("GET /api/pair", () => {
             id: where.id,
             name: where.id,
             slug: `${where.id}-slug`,
-            images: [{ r2Key: `${where.id}/orig`, width: 800, height: 600, position: 0 }],
+            images: [{ id: `img-${where.id}`, width: 800, height: 600, position: 0 }],
           },
     );
 

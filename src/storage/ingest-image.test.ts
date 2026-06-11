@@ -28,7 +28,7 @@ describe("ingestImage", () => {
   it("processes then screens, returning dims, status, confidence, and hash", async () => {
     const result = await ingestImage("img_1");
     // No prefetched buffer → processImage downloads the original itself.
-    expect(processMock).toHaveBeenCalledWith("img_1", undefined);
+    expect(processMock).toHaveBeenCalledWith("img_1", undefined, undefined);
     expect(screenMock).toHaveBeenCalledWith(Buffer.from([1]));
     expect(result).toEqual({
       width: 800,

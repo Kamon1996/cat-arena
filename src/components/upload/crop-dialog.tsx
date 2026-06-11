@@ -1,11 +1,10 @@
 "use client";
 
-import { Loader2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 
 import { Button } from "@/components/ui/button";
-import { catToast } from "@/components/ui/cat-toast";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type CropAreaPixels, cropImageToFile } from "@/lib/crop-image";
+
+/** The chosen framing, in pixels of the photo as the browser shows it
+ *  (EXIF-rotated) — applied SERVER-side to the duel variants only, so the
+ *  uploaded original stays untouched. */
+export type CropAreaPixels = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 const MIN_ZOOM = 1; // zoom 1 = whole photo visible (contain), frame on its short side
 const MAX_ZOOM = 3;
@@ -30,18 +38,23 @@ const DIALOG_OPEN_ANIMATION_MS = 250;
 type CropDialogProps = {
   /** File awaiting a crop decision; null keeps the dialog closed. */
   file: File | null;
-  onCropped: (file: File) => void;
+  /** The chosen framing — the ORIGINAL file is kept; only the rect travels. */
+  onCropped: (file: File, crop: CropAreaPixels) => void;
   onUseOriginal: (file: File) => void;
   /** Dismissed without a decision — the file is dropped entirely. */
   onCancel: () => void;
 };
 
 /**
- * Square cropper shown before a photo enters the upload list, configured like
- * the react-easy-crop reference demo: default objectFit (contain), so at
+ * Square framing dialog shown before a photo enters the upload list, set up
+ * like the react-easy-crop reference demo: default objectFit (contain), so at
  * zoom 1 the whole photo is visible, the square frame auto-fits the photo's
  * short side, and everything outside the frame stays visible but dimmed —
  * any edge of the photo can be brought into the frame by dragging.
+ *
+ * The crop is NOT applied client-side: the original uploads untouched and the
+ * rect is applied by the server to the duel variants, so lightboxes can always
+ * show the real photo.
  *
  * NOTE: do NOT add `classes={{ mediaClassName: "max-w-none" }}` here — the
  * contain layout RELIES on the library's `max-width/height: 100%` rules; that
@@ -53,7 +66,6 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [areaPixels, setAreaPixels] = useState<CropAreaPixels | null>(null);
-  const [busy, setBusy] = useState(false);
   // True once the dialog's open animation has finished — only then is it safe
   // to mount the cropper (it measures the container on mount, see above).
   const [settled, setSettled] = useState(false);
@@ -83,30 +95,23 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
     return () => window.clearTimeout(timer);
   }, [file, settled]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (!file || !areaPixels) {
       return;
     }
-    setBusy(true);
-    try {
-      onCropped(await cropImageToFile(file, areaPixels));
-    } catch {
-      // Canvas/decode failure (rare): don't strand the user — fall back to the
-      // original bytes, which the server pipeline handles fine.
-      catToast.error("Could not crop the photo", {
-        message: "The original photo will be used instead.",
-      });
-      onUseOriginal(file);
-    } finally {
-      setBusy(false);
-    }
+    onCropped(file, {
+      x: Math.round(areaPixels.x),
+      y: Math.round(areaPixels.y),
+      width: Math.round(areaPixels.width),
+      height: Math.round(areaPixels.height),
+    });
   };
 
   return (
     <Dialog
       open={file !== null}
       onOpenChange={(open) => {
-        if (!open && !busy) {
+        if (!open) {
           onCancel();
         }
       }}
@@ -116,7 +121,7 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
           <DialogTitle>Frame your cat</DialogTitle>
           <DialogDescription>
             The square is exactly what voters see on the duel card — drag and zoom until the face
-            fills it.
+            fills it. The full photo stays untouched on the cat's page.
           </DialogDescription>
         </DialogHeader>
         <div className="relative aspect-square w-full overflow-hidden rounded-md border-2 border-ink bg-white">
@@ -153,7 +158,6 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
             value={zoom}
             onChange={(event) => setZoom(Number(event.target.value))}
             className="flex-1 accent-primary"
-            disabled={busy}
             aria-label="Zoom"
           />
           <ZoomIn className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -162,7 +166,7 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
             variant="ghost"
             size="sm"
             className="shrink-0"
-            disabled={busy || (zoom === MIN_ZOOM && crop.x === 0 && crop.y === 0)}
+            disabled={zoom === MIN_ZOOM && crop.x === 0 && crop.y === 0}
             onClick={() => {
               setZoom(MIN_ZOOM);
               setCrop({ x: 0, y: 0 });
@@ -176,7 +180,6 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
           <Button
             type="button"
             variant="outline"
-            disabled={busy}
             onClick={() => {
               if (file) {
                 onUseOriginal(file);
@@ -185,9 +188,8 @@ export function CropDialog({ file, onCropped, onUseOriginal, onCancel }: CropDia
           >
             Keep original
           </Button>
-          <Button type="button" disabled={busy || !areaPixels} onClick={() => void handleConfirm()}>
-            {busy ? <Loader2 className="animate-spin" /> : null}
-            {busy ? "Cropping…" : "Use this crop"}
+          <Button type="button" disabled={!areaPixels} onClick={handleConfirm}>
+            Use this crop
           </Button>
         </DialogFooter>
       </DialogContent>

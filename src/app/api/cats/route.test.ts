@@ -148,6 +148,22 @@ describe("POST /api/cats", () => {
     expect(catUpdate).not.toHaveBeenCalled();
   });
 
+  it("passes each image's framing crop through to processing", async () => {
+    const crop = { x: 10, y: 20, width: 300, height: 300 };
+    await POST(req({ name: "Fluffy", images: [{ r2Key: "cats/a/original", crop }] }));
+    expect(processMock).toHaveBeenCalledWith("a", expect.anything(), crop);
+  });
+
+  it("rejects a malformed crop rect", async () => {
+    const res = await POST(
+      req({
+        name: "Fluffy",
+        images: [{ r2Key: "cats/a/original", crop: { x: -5, y: 0, width: 0, height: 10 } }],
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("stores each image's sha256 on create", async () => {
     await POST(req({ name: "Fluffy", images: [{ r2Key: "cats/a/original" }] }));
     const createArgs = catCreate.mock.calls[0]?.[0] as {

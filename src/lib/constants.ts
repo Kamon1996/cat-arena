@@ -31,6 +31,7 @@ export const ORPHAN_SCAN_LIMIT = 1000; // max R2 keys scanned per cron run
 export const IMAGE_SIZE = {
   THUMB: 200,
   CARD: 800,
+  FULL: 1600, // uncropped lightbox variant
 } as const;
 
 // Pairing — candidate pools & selection windows

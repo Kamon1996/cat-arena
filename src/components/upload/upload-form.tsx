@@ -17,18 +17,25 @@ import { ALLOWED_UPLOAD_TYPES, MAX_IMAGES_PER_CAT, MAX_UPLOAD_BYTES } from "@/li
 const MIN_NAME = 1;
 const MAX_NAME = 60;
 
+const CropRectSchema = z.object({
+  x: z.number().int().min(0),
+  y: z.number().int().min(0),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+
 const FormSchema = z.object({
   name: z.string().trim().min(MIN_NAME).max(MAX_NAME),
   files: z
-    .array(z.instanceof(File))
+    .array(z.object({ file: z.instanceof(File), crop: CropRectSchema.nullable() }))
     .min(1, "Add at least one photo")
     .max(MAX_IMAGES_PER_CAT)
     .refine(
-      (fs) =>
-        fs.every(
-          (f) =>
-            (ALLOWED_UPLOAD_TYPES as readonly string[]).includes(f.type) &&
-            f.size <= MAX_UPLOAD_BYTES,
+      (photos) =>
+        photos.every(
+          (p) =>
+            (ALLOWED_UPLOAD_TYPES as readonly string[]).includes(p.file.type) &&
+            p.file.size <= MAX_UPLOAD_BYTES,
         ),
       "Only JPEG/PNG/WebP up to 10MB",
     ),
@@ -57,13 +64,20 @@ export function UploadForm() {
   async function onSubmit(values: UploadFormValues): Promise<void> {
     setSubmitError(null);
     try {
-      const uploaded = await Promise.all(values.files.map(uploadToR2));
+      // The ORIGINAL bytes upload untouched; the framing crop travels as a
+      // rect and is applied server-side to the duel variants only.
+      const uploaded = await Promise.all(
+        values.files.map(async (p) => ({
+          r2Key: (await uploadToR2(p.file)).r2Key,
+          ...(p.crop ? { crop: p.crop } : {}),
+        })),
+      );
       const res = await fetch("/api/cats", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: values.name,
-          images: uploaded.map((u) => ({ r2Key: u.r2Key })),
+          images: uploaded,
         }),
       });
       if (!res.ok) {

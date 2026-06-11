@@ -63,12 +63,13 @@ describe("processImage", () => {
     sent.length = 0;
   });
 
-  it("writes thumb and card WebP variants and returns dimensions", async () => {
+  it("writes thumb, card and UNCROPPED full WebP variants and returns dimensions", async () => {
     const result = await processImage(IMAGE_ID);
 
     const keys = sent.map((s) => s.Key);
     expect(keys).toContain(`cats/${IMAGE_ID}/thumb.webp`);
     expect(keys).toContain(`cats/${IMAGE_ID}/card.webp`);
+    expect(keys).toContain(`cats/${IMAGE_ID}/full.webp`);
     expect(sent.every((s) => s.ContentType === "image/webp")).toBe(true);
     expect(sent.every((s) => s.size > 0)).toBe(true);
 
@@ -79,5 +80,28 @@ describe("processImage", () => {
   it("returns the SHA-256 hex of the original bytes as uploaded", async () => {
     const result = await processImage(IMAGE_ID);
     expect(result.sha256).toBe(createHash("sha256").update(PNG_2X2).digest("hex"));
+  });
+
+  it("applies the framing crop to duel variants while dims stay uncropped", async () => {
+    const result = await processImage(IMAGE_ID, undefined, { x: 0, y: 0, width: 1, height: 1 });
+
+    // All three variants still produced (full from the uncropped source).
+    const keys = sent.map((s) => s.Key);
+    expect(keys).toContain(`cats/${IMAGE_ID}/thumb.webp`);
+    expect(keys).toContain(`cats/${IMAGE_ID}/full.webp`);
+    // Reported dimensions describe the ORIGINAL, not the crop.
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(2);
+  });
+
+  it("ignores an out-of-bounds crop instead of failing", async () => {
+    const result = await processImage(IMAGE_ID, undefined, {
+      x: 10,
+      y: 10,
+      width: 50,
+      height: 50,
+    });
+    expect(result.width).toBe(2);
+    expect(sent.length).toBeGreaterThan(0);
   });
 });

@@ -15,10 +15,10 @@ import {
 } from "@/lib/constants";
 import { signPairToken } from "@/lib/pair-token";
 import { prisma } from "@/lib/prisma";
-import { publicUrl } from "@/lib/r2";
 import { checkPairServe } from "@/lib/rate-limit";
 import { type PairScope, pickPair } from "@/pairing/pick-pair";
 import { appendSeen, decodeSeen, encodeSeen } from "@/pairing/seen-buffer";
+import { cardUrl } from "@/storage/keys";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,7 @@ async function loadCat(id: string): Promise<PairCat | null> {
       images: {
         where: { status: ImageStatus.APPROVED },
         orderBy: { position: "asc" },
-        select: { r2Key: true, width: true, height: true, position: true },
+        select: { id: true, width: true, height: true, position: true },
       },
     },
   });
@@ -64,7 +64,9 @@ async function loadCat(id: string): Promise<PairCat | null> {
     name: cat.name,
     slug: cat.slug,
     images: cat.images.map((img) => ({
-      url: publicUrl(img.r2Key),
+      // Card variant = the owner's chosen duel framing (the raw original is
+      // uncropped since crops moved server-side).
+      url: cardUrl(img.id),
       width: img.width,
       height: img.height,
       position: img.position,
